@@ -1,0 +1,1900 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grana Viva</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f1115">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Grana Viva">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1115;
+    --card: #171a21;
+    --border: #262b36;
+    --text: #eef0f4;
+    --muted: #8b93a3;
+    --green: #2ecc71;
+    --yellow: #f1c40f;
+    --red: #e74c3c;
+    --accent: #6c5ce7;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 70px;
+  }
+  .hidden { display: none !important; }
+
+  /* Tela de login */
+  #login-screen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 20px;
+  }
+  .login-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px 24px;
+    width: 100%;
+    max-width: 360px;
+    text-align: center;
+  }
+  .login-box h1 { font-size: 28px; margin-bottom: 4px; }
+  .login-box p { color: var(--muted); font-size: 14px; margin-bottom: 24px; }
+
+  input, select {
+    width: 100%;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    background: #0f1115;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 15px;
+  }
+  input:focus, select:focus { outline: 2px solid var(--accent); }
+  label {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 6px;
+    margin-top: 4px;
+  }
+  button {
+    width: 100%;
+    padding: 13px;
+    background: var(--accent);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button:active { opacity: 0.85; }
+  button.secondary {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+  button.small {
+    width: auto;
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  #login-error { color: var(--red); font-size: 13px; margin-top: 10px; min-height: 16px; }
+
+  /* App principal */
+  #app-screen { max-width: 480px; margin: 0 auto; padding: 20px 16px; }
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  header h1 { font-size: 22px; }
+  header button.logout {
+    width: auto;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 400;
+  }
+
+  /* Painel de saldo */
+  .painel {
+    background: linear-gradient(135deg, #6c5ce7, #4834d4);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .painel .saldo-label { font-size: 13px; opacity: 0.85; }
+  .info-icon {
+    display: inline-block;
+    margin-left: 6px;
+    cursor: pointer;
+    opacity: 0.85;
+    font-size: 13px;
+  }
+  #info-saldo-texto {
+    font-size: 12.5px;
+    line-height: 1.5;
+    background: rgba(0,0,0,0.15);
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin: 6px 0;
+  }
+  .painel .saldo-valor { font-size: 32px; font-weight: 700; margin: 4px 0 12px; }
+  .painel .linha-resumo {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    opacity: 0.9;
+    padding: 4px 0;
+  }
+
+  /* Abas */
+  .filtro-mes-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 10px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .filtro-mes-wrap select {
+    width: auto;
+    flex: 1;
+    min-width: 90px;
+    margin: 0;
+  }
+  .tabs {
+    display: flex;
+    background: var(--card);
+    border-radius: 10px;
+    padding: 4px;
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+  }
+  .tab {
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+    padding: 9px 4px;
+    border-radius: 8px;
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+    user-select: none;
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+  .tab.active { background: var(--accent); color: white; }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Cards de item */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 10px;
+  }
+  .card-topo {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 6px;
+  }
+  .card-titulo { font-size: 15px; font-weight: 600; }
+  .card-categoria { font-size: 12px; color: var(--muted); }
+  .card-valor { font-size: 16px; font-weight: 700; }
+  .card-valor.entrada { color: var(--green); }
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 20px;
+    margin-top: 4px;
+  }
+  .badge.pendente { background: rgba(231,76,60,0.15); color: var(--red); }
+  .badge.parcial { background: rgba(241,196,15,0.15); color: var(--yellow); }
+  .badge.quitada { background: rgba(46,204,113,0.15); color: var(--green); }
+  .card-progresso {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .valor-sensivel { transition: filter 0.15s ease; }
+  body.modo-privado .valor-sensivel {
+    filter: blur(7px);
+    user-select: none;
+  }
+  #privacidade-btn.ativo { color: var(--accent); border-color: var(--accent); }
+  .campo-senha { position: relative; }
+  .campo-senha input { padding-right: 42px !important; }
+  .toggle-senha {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    padding: 4px;
+    opacity: 0.75;
+  }
+  .toggle-senha:hover { opacity: 1; }
+  .card-acoes {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .fab {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: white;
+    font-size: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    cursor: pointer;
+    z-index: 10;
+  }
+
+  /* Modal simples */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    align-items: flex-end;
+    z-index: 20;
+  }
+  .modal {
+    background: var(--card);
+    border-radius: 20px 20px 0 0;
+    padding: 22px 18px 30px;
+    width: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+  .modal h2 { font-size: 18px; margin-bottom: 14px; }
+  .modal-fechar {
+    text-align: right;
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 6px;
+    cursor: pointer;
+  }
+
+  .vazio { text-align: center; color: var(--muted); font-size: 13px; padding: 30px 0; }
+
+  footer { text-align: center; color: var(--muted); font-size: 12px; padding: 24px 0; }
+  footer a { color: var(--muted); }
+
+  /* Alertas de vencimento */
+  .banner-alertas {
+    background: rgba(231,76,60,0.12);
+    border: 1px solid rgba(231,76,60,0.4);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+  }
+  .banner-alertas .titulo-alerta {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--red);
+    margin-bottom: 6px;
+  }
+  .banner-alertas .item-alerta {
+    font-size: 13px;
+    color: var(--text);
+    padding: 3px 0;
+    display: flex;
+    justify-content: space-between;
+  }
+  .banner-alertas .item-alerta .quando { color: var(--muted); font-size: 12px; }
+
+  /* Resumo: gráficos e relatório */
+  .resumo-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .resumo-card h3 { font-size: 14px; margin-bottom: 12px; color: var(--muted); font-weight: 600; }
+  .chart-wrap { position: relative; height: 220px; }
+  .btn-pdf {
+    background: var(--green);
+    margin-bottom: 6px;
+  }
+</style>
+</head>
+<body>
+
+<!-- TELA DE LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <h1>Grana Viva</h1>
+    <p>Seu controle financeiro, em tempo real</p>
+    <input type="email" id="login-email" placeholder="E-mail" autocomplete="username">
+    <div class="campo-senha">
+      <input type="password" id="login-password" placeholder="Senha" autocomplete="current-password">
+      <button type="button" class="toggle-senha" id="toggle-senha">👁️</button>
+    </div>
+    <button id="login-btn">Entrar</button>
+    <div id="login-error"></div>
+  </div>
+</div>
+
+<!-- TELA PRINCIPAL -->
+<div id="app-screen" class="hidden">
+  <header>
+    <h1>💰 Grana Viva</h1>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <button class="logout" id="privacidade-btn" title="Esconder valores">👁️</button>
+      <button class="logout" id="logout-btn">Sair</button>
+    </div>
+  </header>
+
+  <div class="painel">
+    <div class="saldo-label">
+      Saldo disponível (conta normal)
+      <span id="btn-info-saldo" class="info-icon" title="O que significa esse valor?">ⓘ</span>
+    </div>
+    <div id="info-saldo-texto" class="hidden">
+      Saldo = Total recebido − Total pago − Guardado.<br>
+      É o dinheiro livre hoje, já descontando o que foi pago e o que você separou/guardou. Não inclui contas ainda pendentes nem valores a receber, pois esses ainda não aconteceram de fato.
+    </div>
+    <div class="saldo-valor valor-sensivel" id="saldo-valor">R$ 0,00</div>
+    <div class="linha-resumo"><span>Total recebido</span><span class="valor-sensivel" id="total-entradas">R$ 0,00</span></div>
+    <div class="linha-resumo"><span>Total pago</span><span class="valor-sensivel" id="total-pago">R$ 0,00</span></div>
+    <div class="linha-resumo"><span>Ainda pendente</span><span class="valor-sensivel" id="total-pendente">R$ 0,00</span></div>
+    <div class="linha-resumo"><span>A receber</span><span class="valor-sensivel" id="total-a-receber">R$ 0,00</span></div>
+    <div class="linha-resumo"><span>📦 Guardado</span><span class="valor-sensivel" id="total-guardado">R$ 0,00</span></div>
+  </div>
+
+  <div id="banner-alertas" class="banner-alertas hidden">
+    <div class="titulo-alerta">⚠️ Contas vencendo</div>
+    <div id="lista-alertas"></div>
+  </div>
+
+  <div class="filtro-mes-wrap">
+    <label style="margin:0;">📅 Mês</label>
+    <select id="filtro-mes-select"></select>
+    <select id="filtro-ano-select"></select>
+    <label style="display:flex; align-items:center; gap:6px; margin:0; font-size:13px;">
+      <input type="checkbox" id="ver-todos-meses" style="width:auto;"> Ver tudo
+    </label>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="entradas">Entradas</div>
+    <div class="tab" data-tab="saidas">Contas / Saídas</div>
+    <div class="tab" data-tab="receber">A Receber</div>
+    <div class="tab" data-tab="investimentos">Investimentos</div>
+    <div class="tab" data-tab="resumo">Resumo</div>
+  </div>
+
+  <div id="tab-entradas" class="tab-content active">
+    <div id="lista-entradas"><div class="vazio">Nenhuma entrada lançada ainda</div></div>
+  </div>
+
+  <div id="tab-saidas" class="tab-content">
+    <div id="lista-saidas"><div class="vazio">Nenhuma conta lançada ainda</div></div>
+  </div>
+
+  <div id="tab-receber" class="tab-content">
+    <div id="lista-receber"><div class="vazio">Ninguém te deve nada por aqui ainda</div></div>
+  </div>
+
+  <div id="tab-investimentos" class="tab-content">
+    <div class="resumo-card">
+      <div class="linha-resumo"><span>💰 Total investido</span><span class="valor-sensivel" id="total-investido">R$ 0,00</span></div>
+    </div>
+    <div class="resumo-card">
+      <h3>Evolução do patrimônio</h3>
+      <div class="chart-wrap valor-sensivel"><canvas id="grafico-evolucao-investimentos"></canvas></div>
+    </div>
+    <div class="resumo-card">
+      <h3>Distribuição por tipo</h3>
+      <div class="chart-wrap valor-sensivel"><canvas id="grafico-categorias-investimentos"></canvas></div>
+    </div>
+    <div id="lista-investimentos"><div class="vazio">Nenhum investimento lançado ainda</div></div>
+  </div>
+
+  <div id="tab-resumo" class="tab-content">
+    <div class="resumo-card">
+      <button class="btn-pdf" id="btn-relatorio-pdf">📄 Baixar relatório do mês (PDF)</button>
+    </div>
+    <div class="resumo-card">
+      <h3>📊 Relatório anual</h3>
+      <label style="margin-top:0;">Ano</label>
+      <select id="filtro-ano-relatorio"></select>
+      <div class="chart-wrap valor-sensivel"><canvas id="grafico-relatorio-anual"></canvas></div>
+      <div class="linha-resumo"><span>💵 Total entrou no ano</span><span class="valor-sensivel" id="anual-total-entrou">R$ 0,00</span></div>
+      <div class="linha-resumo"><span>🧾 Total saiu no ano</span><span class="valor-sensivel" id="anual-total-saiu">R$ 0,00</span></div>
+      <div class="linha-resumo"><span>📦 Total guardado no ano</span><span class="valor-sensivel" id="anual-total-guardado">R$ 0,00</span></div>
+    </div>
+    <div class="resumo-card">
+      <h3>Entradas por categoria</h3>
+      <div class="chart-wrap valor-sensivel"><canvas id="grafico-categorias"></canvas></div>
+    </div>
+    <div class="resumo-card">
+      <h3>Visão geral do mês</h3>
+      <div class="chart-wrap valor-sensivel"><canvas id="grafico-geral"></canvas></div>
+    </div>
+  </div>
+
+  <footer>Feito por <a href="https://instagram.com/nancysantana.dev" target="_blank">@nancysantana.dev</a></footer>
+</div>
+
+<div class="fab hidden" id="fab-add">+</div>
+
+<!-- MODAL: escolher tipo -->
+<div class="overlay hidden" id="overlay-escolha">
+  <div class="modal">
+    <div class="modal-fechar" data-fechar="overlay-escolha">Fechar ✕</div>
+    <h2>O que você quer lançar?</h2>
+    <button id="btn-nova-entrada" style="margin-bottom:10px;">💵 Nova entrada (recebi)</button>
+    <button id="btn-nova-saida" class="secondary" style="margin-bottom:10px;">🧾 Nova conta / saída (devo, paguei)</button>
+    <button id="btn-novo-receber" class="secondary" style="margin-bottom:10px;">🤝 Alguém me deve (a receber)</button>
+    <button id="btn-novo-investimento" class="secondary" style="margin-bottom:10px;">📈 Novo investimento (aporte)</button>
+    <button id="btn-guardar" class="secondary">📦 Guardar / Resgatar dinheiro</button>
+  </div>
+</div>
+
+<!-- MODAL: nova entrada -->
+<div class="overlay hidden" id="overlay-entrada">
+  <div class="modal">
+    <div class="modal-fechar" data-fechar="overlay-entrada">Fechar ✕</div>
+    <h2 id="titulo-entrada">Nova entrada</h2>
+    <label>Valor recebido (R$)</label>
+    <input type="number" step="0.01" id="entrada-valor" placeholder="Ex: 1500">
+    <label>De onde veio</label>
+    <input type="text" id="entrada-origem" placeholder="Ex: Fernando - Val Beleza">
+    <label>Categoria</label>
+    <select id="entrada-categoria">
+      <option value="Salário Val">Salário Val</option>
+      <option value="Freela - site">Freela - site</option>
+      <option value="Unhas">Unhas</option>
+      <option value="Brechó">Brechó</option>
+      <option value="Outro">Outro</option>
+    </select>
+    <label>Data</label>
+    <input type="date" id="entrada-data">
+    <button id="salvar-entrada">Salvar entrada</button>
+  </div>
+</div>
+
+<!-- MODAL: nova saída -->
+<div class="overlay hidden" id="overlay-saida">
+  <div class="modal">
+    <div class="modal-fechar" data-fechar="overlay-saida">Fechar ✕</div>
+    <h2 id="titulo-saida">Nova conta / saída</h2>
+    <label>Descrição</label>
+    <input type="text" id="saida-descricao" placeholder="Ex: Cartão Nubank">
+    <label>Categoria</label>
+    <select id="saida-categoria">
+      <option value="Moradia">Moradia (aluguel, condomínio)</option>
+      <option value="Contas de casa">Contas de casa (luz, água, internet, gás)</option>
+      <option value="Mercado">Mercado / Alimentação</option>
+      <option value="Transporte">Transporte</option>
+      <option value="Saúde">Saúde</option>
+      <option value="Educação">Educação</option>
+      <option value="Entretenimento">Entretenimento / Lazer</option>
+      <option value="Vestuário">Vestuário</option>
+      <option value="Assinaturas">Assinaturas (streaming, apps)</option>
+      <option value="Cartão/Dívida">Cartão de crédito / Dívida</option>
+      <option value="Outro">Outro</option>
+    </select>
+    <label>Valor total (R$)</label>
+    <input type="number" step="0.01" id="saida-valor" placeholder="Ex: 1500">
+    <label>Tipo</label>
+    <select id="saida-tipo">
+      <option value="avulsa">Avulsa (única)</option>
+      <option value="diaria">Diária (repete todo dia)</option>
+      <option value="semanal">Semanal (repete toda semana)</option>
+      <option value="quinzenal">Quinzenal (repete a cada 15 dias)</option>
+      <option value="mensal">Mensal (repete todo mês)</option>
+      <option value="anual">Anual (repete todo ano)</option>
+    </select>
+    <label>Vencimento</label>
+    <input type="date" id="saida-vencimento">
+    <label style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+      <input type="checkbox" id="saida-ja-paguei" style="width:auto;">
+      ✅ Já paguei na hora
+    </label>
+    <button id="salvar-saida">Salvar conta</button>
+  </div>
+</div>
+
+<!-- MODAL: guardar/resgatar dinheiro -->
+<div class="overlay hidden" id="overlay-reserva">
+  <div class="modal">
+    <div class="modal-fechar" data-fechar="overlay-reserva">Fechar ✕</div>
+    <h2>Guardar ou resgatar dinheiro</h2>
+    <label>O que você quer fazer</label>
+    <select id="reserva-tipo">
+      <option value="guardado">📦 Guardar (separei esse valor)</option>
+      <option value="resgatado">💸 Resgatar (tirei da caixinha)</option>
+    </select>
+    <label>Valor (R$)</label>
+    <input type="number" step="0.01" id="reserva-valor" placeholder="Ex: 1000">
+    <label>Descrição (opcional)</label>
+    <input type="text" id="reserva-descricao" placeholder="Ex: Reserva de emergência">
+    <button id="salvar-reserva">Salvar</button>
+  </div>
+</div>
+
+<!-- MODAL: novo investimento -->
+<div class="overlay hidden" id="overlay-investimento">
+  <div class="modal">
+    <div class="modal-fechar" data-fechar="overlay-investimento">Fechar ✕</div>
+    <h2>Novo investimento (aporte)</h2>
+    <label>Descrição</label>
+    <input type="text" id="investimento-descricao" placeholder="Ex: Tesouro Selic, CDB Nubank...">
+    <label>Categoria</label>
+    <select id="investimento-categoria">
+      <option value="Renda Fixa">Renda Fixa (CDB, Tesouro, Poupança)</option>
+      <option value="Ações">Ações</option>
+      <option value="Fundos Imobiliários">Fundos Imobiliários (FIIs)</option>
+      <option value="Fundos de Investimento">Fundos de Investimento</option>
+      <option value="Criptomoedas">Criptomoedas</option>
+      <option value="Previdência Privada">Previdência Privada</option>
+      <option value="Outro">Outro</option>
+    </select>
+    <label>Valor aportado (R$)</label>
+    <input type="number" step="0.01" id="investimento-valor" placeholder="Ex: 500">
+    <label>Data</label>
+    <input type="date" id="investimento-data">
+    <button id="salvar-investimento">Salvar</button>
+  </div>
+</div>
+
+<!-- MODAL: nova conta a receber -->
+<div class="overlay hidden" id="overlay-receber">
+  <div class="modal">
+    <div class="modal-fechar" data-fechar="overlay-receber">Fechar ✕</div>
+    <h2 id="titulo-receber">Alguém me deve</h2>
+    <label>Quem te deve</label>
+    <input type="text" id="receber-nome" placeholder="Ex: Cliente do site X">
+    <label>Valor total (R$)</label>
+    <input type="number" step="0.01" id="receber-valor" placeholder="Ex: 800">
+    <label>Referente a</label>
+    <input type="text" id="receber-descricao" placeholder="Ex: Sinal do site">
+    <label>Data combinada / previsão</label>
+    <input type="date" id="receber-data">
+    <div id="receber-editar-recebido-wrap" class="hidden">
+      <label>Já recebido (R$) <span style="color:var(--muted); font-weight:normal;">— corrige aqui se registrou errado</span></label>
+      <input type="number" step="0.01" id="receber-valor-recebido">
+    </div>
+    <button id="salvar-receber">Salvar</button>
+  </div>
+</div>
+
+<!-- MODAL: registrar recebimento -->
+<div class="overlay hidden" id="overlay-recebimento">
+  <div class="modal">
+    <div class="modal-fechar" data-fechar="overlay-recebimento">Fechar ✕</div>
+    <h2>Registrar recebimento</h2>
+    <p style="color:var(--muted); font-size:13px; margin-bottom:10px;" id="recebimento-info"></p>
+    <label>Valor recebido agora (R$)</label>
+    <input type="number" step="0.01" id="recebimento-valor" placeholder="Pode ser parcial">
+    <button id="salvar-recebimento">Confirmar recebimento</button>
+  </div>
+</div>
+
+<!-- MODAL: histórico de pagamentos -->
+<div class="overlay hidden" id="overlay-historico">
+  <div class="modal">
+    <div class="modal-fechar" data-fechar="overlay-historico">Fechar ✕</div>
+    <h2 id="historico-titulo">Histórico</h2>
+    <p style="color:var(--muted); font-size:13px; margin-bottom:14px;" id="historico-resumo" class="valor-sensivel"></p>
+    <div id="historico-lista"></div>
+  </div>
+</div>
+
+<!-- MODAL: registrar pagamento -->
+<div class="overlay hidden" id="overlay-pagamento">
+  <div class="modal">
+    <div class="modal-fechar" data-fechar="overlay-pagamento">Fechar ✕</div>
+    <h2>Registrar pagamento</h2>
+    <p style="color:var(--muted); font-size:13px; margin-bottom:10px;" id="pagamento-info"></p>
+    <label>Valor pago agora (R$)</label>
+    <input type="number" step="0.01" id="pagamento-valor" placeholder="Pode ser parcial">
+    <button id="salvar-pagamento">Confirmar pagamento</button>
+    <button id="pagar-tudo" class="secondary" style="margin-top:10px;">✅ Pagar tudo (quitar)</button>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+  import {
+    getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut
+  } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+  import {
+    getFirestore, collection, addDoc, onSnapshot, query, orderBy, where,
+    doc, updateDoc, serverTimestamp, deleteDoc
+  } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyB-VfSvJfR8AwVpE0OFpKzSQLffGrujTDk",
+    authDomain: "controle-financeiro-seguro.firebaseapp.com",
+    projectId: "controle-financeiro-seguro",
+    storageBucket: "controle-financeiro-seguro.firebasestorage.app",
+    messagingSenderId: "50177628041",
+    appId: "1:50177628041:web:e90121e9e9f85fd71b7358"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  const entradasRef = collection(db, "entradas");
+  const saidasRef = collection(db, "saidas");
+  const receberRef = collection(db, "a_receber");
+  const pagamentosRef = collection(db, "pagamentos");
+  const recebimentosRef = collection(db, "recebimentos");
+  const reservasRef = collection(db, "reservas");
+  const investimentosRef = collection(db, "investimentos");
+  let uidAtual = null;
+
+  // ---------- LOGIN ----------
+  const loginScreen = document.getElementById("login-screen");
+  const appScreen = document.getElementById("app-screen");
+  const fabAdd = document.getElementById("fab-add");
+  const loginError = document.getElementById("login-error");
+
+  document.getElementById("login-btn").addEventListener("click", async () => {
+    const email = document.getElementById("login-email").value.trim();
+    const senha = document.getElementById("login-password").value;
+    loginError.textContent = "";
+    if (!email || !senha) { loginError.textContent = "Preencha e-mail e senha."; return; }
+    try {
+      await signInWithEmailAndPassword(auth, email, senha);
+    } catch (erro) {
+      loginError.textContent = "E-mail ou senha incorretos.";
+    }
+  });
+
+  document.getElementById("logout-btn").addEventListener("click", () => signOut(auth));
+
+  // ---------- MOSTRAR/ESCONDER SENHA NO LOGIN ----------
+  document.getElementById("toggle-senha").addEventListener("click", () => {
+    const campo = document.getElementById("login-password");
+    const btn = document.getElementById("toggle-senha");
+    if (campo.type === "password") {
+      campo.type = "text";
+      btn.textContent = "🙈";
+    } else {
+      campo.type = "password";
+      btn.textContent = "👁️";
+    }
+  });
+
+  // ---------- MODO PRIVADO (esconder valores na tela) ----------
+  const btnPrivacidade = document.getElementById("privacidade-btn");
+  function aplicarModoPrivado(ativo) {
+    document.body.classList.toggle("modo-privado", ativo);
+    btnPrivacidade.classList.toggle("ativo", ativo);
+    btnPrivacidade.textContent = ativo ? "🙈" : "👁️";
+    btnPrivacidade.title = ativo ? "Mostrar valores" : "Esconder valores";
+    localStorage.setItem("grana-viva-modo-privado", ativo ? "1" : "0");
+  }
+  btnPrivacidade.addEventListener("click", () => {
+    aplicarModoPrivado(!document.body.classList.contains("modo-privado"));
+  });
+  aplicarModoPrivado(localStorage.getItem("grana-viva-modo-privado") === "1");
+
+  onAuthStateChanged(auth, (usuario) => {
+    if (usuario) {
+      uidAtual = usuario.uid;
+      loginScreen.classList.add("hidden");
+      appScreen.classList.remove("hidden");
+      fabAdd.classList.remove("hidden");
+      carregarEntradas();
+      carregarSaidas();
+      carregarReceber();
+      carregarReservas();
+      carregarInvestimentos();
+    } else {
+      appScreen.classList.add("hidden");
+      loginScreen.classList.remove("hidden");
+      fabAdd.classList.add("hidden");
+    }
+  });
+
+  // ---------- ABAS ----------
+  document.querySelectorAll(".tab").forEach(tab => {
+    tab.addEventListener("click", () => {
+      document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+      tab.classList.add("active");
+      document.getElementById("tab-" + tab.dataset.tab).classList.add("active");
+    });
+  });
+
+  // ---------- MODAIS ----------
+  function abrir(id) { document.getElementById(id).classList.remove("hidden"); }
+  function fechar(id) { document.getElementById(id).classList.add("hidden"); }
+
+  document.querySelectorAll("[data-fechar]").forEach(el => {
+    el.addEventListener("click", () => fechar(el.dataset.fechar));
+  });
+
+  fabAdd.addEventListener("click", () => abrir("overlay-escolha"));
+
+  document.getElementById("btn-nova-entrada").addEventListener("click", () => {
+    fechar("overlay-escolha");
+    editandoEntradaId = null;
+    document.getElementById("titulo-entrada").textContent = "Nova entrada";
+    document.getElementById("salvar-entrada").textContent = "Salvar entrada";
+    document.getElementById("entrada-valor").value = "";
+    document.getElementById("entrada-origem").value = "";
+    document.getElementById("entrada-data").value = new Date().toISOString().slice(0,10);
+    abrir("overlay-entrada");
+  });
+
+  document.getElementById("btn-nova-saida").addEventListener("click", () => {
+    fechar("overlay-escolha");
+    editandoSaidaId = null;
+    document.getElementById("titulo-saida").textContent = "Nova conta / saída";
+    document.getElementById("salvar-saida").textContent = "Salvar conta";
+    document.getElementById("saida-descricao").value = "";
+    document.getElementById("saida-categoria").value = "Mercado";
+    document.getElementById("saida-valor").value = "";
+    document.getElementById("saida-vencimento").value = "";
+    document.getElementById("saida-ja-paguei").checked = false;
+    abrir("overlay-saida");
+  });
+
+  document.getElementById("btn-novo-receber").addEventListener("click", () => {
+    fechar("overlay-escolha");
+    editandoReceberId = null;
+    document.getElementById("titulo-receber").textContent = "Alguém me deve";
+    document.getElementById("salvar-receber").textContent = "Salvar";
+    document.getElementById("receber-nome").value = "";
+    document.getElementById("receber-valor").value = "";
+    document.getElementById("receber-descricao").value = "";
+    document.getElementById("receber-data").value = new Date().toISOString().slice(0,10);
+    document.getElementById("receber-editar-recebido-wrap").classList.add("hidden");
+    abrir("overlay-receber");
+  });
+
+  document.getElementById("btn-guardar").addEventListener("click", () => {
+    fechar("overlay-escolha");
+    abrir("overlay-reserva");
+  });
+
+  document.getElementById("btn-novo-investimento").addEventListener("click", () => {
+    fechar("overlay-escolha");
+    document.getElementById("investimento-descricao").value = "";
+    document.getElementById("investimento-valor").value = "";
+    document.getElementById("investimento-data").value = new Date().toISOString().slice(0,10);
+    abrir("overlay-investimento");
+  });
+
+  document.getElementById("salvar-reserva").addEventListener("click", async () => {
+    const tipo = document.getElementById("reserva-tipo").value;
+    const valor = parseFloat(document.getElementById("reserva-valor").value);
+    const descricao = document.getElementById("reserva-descricao").value.trim();
+
+    if (!valor || valor <= 0) { alert("Coloca um valor válido."); return; }
+
+    await addDoc(reservasRef, {
+      ownerId: uidAtual,
+      tipo, valor, descricao,
+      data: new Date().toISOString().slice(0,10),
+      criadoEm: serverTimestamp()
+    });
+
+    document.getElementById("reserva-valor").value = "";
+    document.getElementById("reserva-descricao").value = "";
+    document.getElementById("reserva-tipo").value = "guardado";
+    fechar("overlay-reserva");
+  });
+
+  document.getElementById("salvar-investimento").addEventListener("click", async () => {
+    const descricao = document.getElementById("investimento-descricao").value.trim();
+    const categoria = document.getElementById("investimento-categoria").value;
+    const valor = parseFloat(document.getElementById("investimento-valor").value);
+    const data = document.getElementById("investimento-data").value;
+
+    if (!valor || valor <= 0) { alert("Coloca um valor válido."); return; }
+
+    await addDoc(investimentosRef, {
+      ownerId: uidAtual,
+      descricao, categoria, valor, data,
+      criadoEm: serverTimestamp()
+    });
+
+    document.getElementById("investimento-descricao").value = "";
+    document.getElementById("investimento-valor").value = "";
+    fechar("overlay-investimento");
+  });
+
+  // ---------- EDIÇÃO (controle de qual item está sendo editado) ----------
+  let editandoEntradaId = null;
+  let editandoSaidaId = null;
+  let editandoReceberId = null;
+
+  // ---------- SALVAR ENTRADA ----------
+  document.getElementById("salvar-entrada").addEventListener("click", async () => {
+    const valor = parseFloat(document.getElementById("entrada-valor").value);
+    const origem = document.getElementById("entrada-origem").value.trim();
+    const categoria = document.getElementById("entrada-categoria").value;
+    const data = document.getElementById("entrada-data").value;
+
+    if (!valor || valor <= 0) { alert("Coloca um valor válido."); return; }
+
+    if (editandoEntradaId) {
+      await updateDoc(doc(db, "entradas", editandoEntradaId), { valor, origem, categoria, data });
+      editandoEntradaId = null;
+    } else {
+      await addDoc(entradasRef, {
+      ownerId: uidAtual,
+        valor, origem, categoria, data,
+        criadoEm: serverTimestamp()
+      });
+    }
+
+    document.getElementById("entrada-valor").value = "";
+    document.getElementById("entrada-origem").value = "";
+    document.getElementById("titulo-entrada").textContent = "Nova entrada";
+    document.getElementById("salvar-entrada").textContent = "Salvar entrada";
+    fechar("overlay-entrada");
+  });
+
+  // ---------- SALVAR SAÍDA ----------
+  document.getElementById("salvar-saida").addEventListener("click", async () => {
+    const descricao = document.getElementById("saida-descricao").value.trim();
+    const categoria = document.getElementById("saida-categoria").value;
+    const valorTotal = parseFloat(document.getElementById("saida-valor").value);
+    const tipo = document.getElementById("saida-tipo").value;
+    const vencimento = document.getElementById("saida-vencimento").value;
+    const jaPaguei = document.getElementById("saida-ja-paguei").checked;
+
+    if (!descricao || !valorTotal || valorTotal <= 0) { alert("Preencha descrição e valor."); return; }
+
+    if (editandoSaidaId) {
+      await updateDoc(doc(db, "saidas", editandoSaidaId), { descricao, categoria, valorTotal, tipo, vencimento });
+      editandoSaidaId = null;
+    } else {
+      await addDoc(saidasRef, {
+      ownerId: uidAtual,
+        descricao, categoria, valorTotal, tipo, vencimento,
+        valorPago: jaPaguei ? valorTotal : 0,
+        status: jaPaguei ? "quitada" : "pendente",
+        criadoEm: serverTimestamp()
+      });
+    }
+
+    document.getElementById("saida-descricao").value = "";
+    document.getElementById("saida-valor").value = "";
+    document.getElementById("saida-ja-paguei").checked = false;
+    document.getElementById("titulo-saida").textContent = "Nova conta / saída";
+    document.getElementById("salvar-saida").textContent = "Salvar conta";
+    fechar("overlay-saida");
+  });
+
+  // ---------- SALVAR A RECEBER ----------
+  document.getElementById("salvar-receber").addEventListener("click", async () => {
+    const nome = document.getElementById("receber-nome").value.trim();
+    const valorTotal = parseFloat(document.getElementById("receber-valor").value);
+    const descricao = document.getElementById("receber-descricao").value.trim();
+    const data = document.getElementById("receber-data").value;
+
+    if (!nome || !valorTotal || valorTotal <= 0) { alert("Preencha nome e valor."); return; }
+
+    if (editandoReceberId) {
+      const valorRecebido = parseFloat(document.getElementById("receber-valor-recebido").value) || 0;
+      const status = valorRecebido >= valorTotal ? "quitada" : (valorRecebido > 0 ? "parcial" : "pendente");
+      await updateDoc(doc(db, "a_receber", editandoReceberId), { nome, valorTotal, descricao, data, valorRecebido, status });
+      editandoReceberId = null;
+    } else {
+      await addDoc(receberRef, {
+      ownerId: uidAtual,
+        nome, valorTotal, descricao, data,
+        valorRecebido: 0,
+        status: "pendente",
+        criadoEm: serverTimestamp()
+      });
+    }
+
+    document.getElementById("receber-nome").value = "";
+    document.getElementById("receber-valor").value = "";
+    document.getElementById("receber-descricao").value = "";
+    document.getElementById("titulo-receber").textContent = "Alguém me deve";
+    document.getElementById("salvar-receber").textContent = "Salvar";
+    fechar("overlay-receber");
+  });
+
+  // ---------- FILTRO DE MÊS ----------
+  let filtroMesAtual = new Date().toISOString().slice(0, 7); // YYYY-MM
+  let verTodosMeses = false;
+
+  function estaNoMesFiltrado(dataStr) {
+    if (verTodosMeses) return true;
+    if (!dataStr) return true;
+    return dataStr.slice(0, 7) === filtroMesAtual;
+  }
+
+  const nomesMeses = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+  const selectMes = document.getElementById("filtro-mes-select");
+  document.getElementById("btn-info-saldo").addEventListener("click", () => {
+    document.getElementById("info-saldo-texto").classList.toggle("hidden");
+  });
+  const selectAno = document.getElementById("filtro-ano-select");
+
+  nomesMeses.forEach((nome, i) => {
+    const opt = document.createElement("option");
+    opt.value = String(i + 1).padStart(2, "0");
+    opt.textContent = nome;
+    selectMes.appendChild(opt);
+  });
+
+  const anoAtualFiltro = new Date().getFullYear();
+  for (let a = anoAtualFiltro - 5; a <= anoAtualFiltro + 3; a++) {
+    const opt = document.createElement("option");
+    opt.value = a;
+    opt.textContent = a;
+    selectAno.appendChild(opt);
+  }
+
+  selectMes.value = filtroMesAtual.slice(5, 7);
+  selectAno.value = filtroMesAtual.slice(0, 4);
+
+  function atualizarFiltroMesEAno() {
+    filtroMesAtual = `${selectAno.value}-${selectMes.value}`;
+    renderizarEntradas();
+    renderizarSaidas();
+    renderizarReceber();
+  }
+
+  selectMes.addEventListener("change", atualizarFiltroMesEAno);
+  selectAno.addEventListener("change", atualizarFiltroMesEAno);
+
+  document.getElementById("ver-todos-meses").addEventListener("change", (e) => {
+    verTodosMeses = e.target.checked;
+    selectMes.disabled = verTodosMeses;
+    selectAno.disabled = verTodosMeses;
+    renderizarEntradas();
+    renderizarSaidas();
+    renderizarReceber();
+  });
+
+  // ---------- LISTAR ENTRADAS ----------
+  let entradasCache = [];
+  function carregarEntradas() {
+    const q = query(entradasRef, where("ownerId", "==", uidAtual), orderBy("criadoEm", "desc"));
+    onSnapshot(q, (snap) => {
+      entradasCache = [];
+      snap.forEach(docSnap => entradasCache.push({ id: docSnap.id, ...docSnap.data() }));
+      renderizarEntradas();
+      atualizarPainel();
+    });
+  }
+
+  function renderizarEntradas() {
+    const lista = document.getElementById("lista-entradas");
+    const itens = entradasCache.filter(d => estaNoMesFiltrado(d.data));
+    if (itens.length === 0) {
+      lista.innerHTML = '<div class="vazio">Nenhuma entrada neste período</div>';
+    } else {
+      lista.innerHTML = "";
+      itens.forEach(d => {
+        const id = d.id;
+        lista.innerHTML += `
+          <div class="card">
+            <div class="card-topo">
+              <div>
+                <div class="card-titulo">${d.origem || "Sem descrição"}</div>
+                <div class="card-categoria">${d.categoria || ""} ${d.data ? "· " + formatarData(d.data) : ""}</div>
+              </div>
+              <div class="card-valor entrada valor-sensivel">+ ${formatarMoeda(d.valor)}</div>
+            </div>
+            <div class="card-acoes">
+              <button class="small secondary" data-editar-entrada="${id}">Editar</button>
+            </div>
+          </div>`;
+      });
+
+      document.querySelectorAll("[data-editar-entrada]").forEach(btn => {
+        btn.addEventListener("click", () => abrirEdicaoEntrada(btn.dataset.editarEntrada));
+      });
+    }
+  }
+
+  // ---------- LISTAR SAÍDAS ----------
+  let saidasCache = [];
+  function carregarSaidas() {
+    const q = query(saidasRef, where("ownerId", "==", uidAtual), orderBy("criadoEm", "desc"));
+    onSnapshot(q, (snap) => {
+      saidasCache = [];
+      snap.forEach(docSnap => saidasCache.push({ id: docSnap.id, ...docSnap.data() }));
+      renderizarSaidas();
+      atualizarPainel();
+    });
+  }
+
+  function renderizarSaidas() {
+    const lista = document.getElementById("lista-saidas");
+    // pendente/parcial ficam sempre visíveis (independente do mês); só as quitadas entram no filtro
+    const itens = saidasCache.filter(d => d.status !== "quitada" || estaNoMesFiltrado(d.vencimento));
+    if (itens.length === 0) {
+      lista.innerHTML = '<div class="vazio">Nenhuma conta neste período</div>';
+    } else {
+      lista.innerHTML = "";
+      itens.forEach(d => {
+        const id = d.id;
+        const restante = d.valorTotal - (d.valorPago || 0);
+        const statusClasse = d.status === "quitada" ? "quitada" : (d.status === "parcial" ? "parcial" : "pendente");
+        const statusTexto = d.status === "quitada" ? "Quitada ✅" : (d.status === "parcial" ? "Parcial" : "Pendente");
+
+        lista.innerHTML += `
+          <div class="card">
+            <div class="card-topo">
+              <div>
+                <div class="card-titulo">${d.descricao}</div>
+                <div class="card-categoria">${d.categoria ? d.categoria + " · " : ""}${rotuloTipo(d.tipo)} ${d.vencimento ? "· vence " + formatarData(d.vencimento) : ""}</div>
+              </div>
+              <div>
+                <div class="card-valor valor-sensivel">${formatarMoeda(d.valorTotal)}</div>
+                <span class="badge ${statusClasse}">${statusTexto}</span>
+              </div>
+            </div>
+            ${d.status !== "quitada" ? `
+              <div class="card-progresso valor-sensivel">Pago: ${formatarMoeda(d.valorPago || 0)} · Falta: ${formatarMoeda(restante)}</div>
+              <div class="card-acoes">
+                <button class="small" data-pagar="${id}">Registrar pagamento</button>
+                <button class="small secondary" data-historico="${id}">Ver histórico</button>
+                <button class="small secondary" data-editar-saida="${id}">Editar</button>
+                <button class="small secondary" data-excluir-saida="${id}">🗑️ Excluir</button>
+              </div>
+            ` : `<div class="card-progresso valor-sensivel">Pago em ${formatarMoeda(d.valorPago)}</div>
+              <div class="card-acoes">
+                <button class="small secondary" data-historico="${id}">Ver histórico</button>
+                <button class="small secondary" data-editar-saida="${id}">Editar</button>
+                <button class="small secondary" data-excluir-saida="${id}">🗑️ Excluir</button>
+              </div>`}
+          </div>`;
+      });
+
+      document.querySelectorAll("[data-pagar]").forEach(btn => {
+        btn.addEventListener("click", () => abrirPagamento(btn.dataset.pagar));
+      });
+      document.querySelectorAll("[data-historico]").forEach(btn => {
+        btn.addEventListener("click", () => abrirHistorico(btn.dataset.historico));
+      });
+      document.querySelectorAll("[data-editar-saida]").forEach(btn => {
+        btn.addEventListener("click", () => abrirEdicaoSaida(btn.dataset.editarSaida));
+      });
+      document.querySelectorAll("[data-excluir-saida]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          if (confirm("Excluir essa conta? Essa ação não pode ser desfeita.")) {
+            await deleteDoc(doc(db, "saidas", btn.dataset.excluirSaida));
+          }
+        });
+      });
+    }
+  }
+
+  // ---------- LISTAR A RECEBER ----------
+  let receberCache = [];
+  function carregarReceber() {
+    const q = query(receberRef, where("ownerId", "==", uidAtual), orderBy("criadoEm", "desc"));
+    onSnapshot(q, (snap) => {
+      receberCache = [];
+      snap.forEach(docSnap => receberCache.push({ id: docSnap.id, ...docSnap.data() }));
+      renderizarReceber();
+      atualizarPainel();
+    });
+  }
+
+  function renderizarReceber() {
+    const lista = document.getElementById("lista-receber");
+    // pendente/parcial ficam sempre visíveis (independente do mês); só os já recebidos entram no filtro
+    const itens = receberCache.filter(d => d.status !== "quitada" || estaNoMesFiltrado(d.data));
+    if (itens.length === 0) {
+      lista.innerHTML = '<div class="vazio">Ninguém te deve nada neste período</div>';
+    } else {
+      lista.innerHTML = "";
+      itens.forEach(d => {
+        const id = d.id;
+        const restante = d.valorTotal - (d.valorRecebido || 0);
+        const statusClasse = d.status === "quitada" ? "quitada" : (d.status === "parcial" ? "parcial" : "pendente");
+        const statusTexto = d.status === "quitada" ? "Recebido ✅" : (d.status === "parcial" ? "Parcial" : "Pendente");
+
+        lista.innerHTML += `
+          <div class="card">
+            <div class="card-topo">
+              <div>
+                <div class="card-titulo">${d.nome}</div>
+                <div class="card-categoria">${d.descricao || ""} ${d.data ? "· " + formatarData(d.data) : ""}</div>
+              </div>
+              <div>
+                <div class="card-valor entrada valor-sensivel">${formatarMoeda(d.valorTotal)}</div>
+                <span class="badge ${statusClasse}">${statusTexto}</span>
+              </div>
+            </div>
+            ${d.status !== "quitada" ? `
+              <div class="card-progresso valor-sensivel">Recebido: ${formatarMoeda(d.valorRecebido || 0)} · Falta: ${formatarMoeda(restante)}</div>
+              <div class="card-acoes">
+                <button class="small" data-receber="${id}">Registrar recebimento</button>
+                <button class="small secondary" data-historico-receber="${id}">Ver histórico</button>
+                <button class="small secondary" data-editar-receber="${id}">Editar</button>
+                <button class="small secondary" data-excluir-receber="${id}">🗑️ Excluir</button>
+              </div>
+            ` : `<div class="card-progresso">Recebido totalmente</div>
+              <div class="card-acoes">
+                <button class="small secondary" data-historico-receber="${id}">Ver histórico</button>
+                <button class="small secondary" data-editar-receber="${id}">Editar</button>
+                <button class="small secondary" data-excluir-receber="${id}">🗑️ Excluir</button>
+              </div>`}
+          </div>`;
+      });
+
+      document.querySelectorAll("[data-receber]").forEach(btn => {
+        btn.addEventListener("click", () => abrirRecebimento(btn.dataset.receber));
+      });
+      document.querySelectorAll("[data-historico-receber]").forEach(btn => {
+        btn.addEventListener("click", () => abrirHistoricoReceber(btn.dataset.historicoReceber));
+      });
+      document.querySelectorAll("[data-editar-receber]").forEach(btn => {
+        btn.addEventListener("click", () => abrirEdicaoReceber(btn.dataset.editarReceber));
+      });
+      document.querySelectorAll("[data-excluir-receber]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          if (confirm("Excluir esse registro de 'A Receber'? Essa ação não pode ser desfeita.")) {
+            await deleteDoc(doc(db, "a_receber", btn.dataset.excluirReceber));
+          }
+        });
+      });
+    }
+  }
+
+  // ---------- ABRIR EDIÇÃO ----------
+  function abrirEdicaoEntrada(id) {
+    const item = entradasCache.find(e => e.id === id);
+    if (!item) return;
+    editandoEntradaId = id;
+    document.getElementById("entrada-valor").value = item.valor;
+    document.getElementById("entrada-origem").value = item.origem || "";
+    document.getElementById("entrada-categoria").value = item.categoria || "Outro";
+    document.getElementById("entrada-data").value = item.data || "";
+    document.getElementById("titulo-entrada").textContent = "Editar entrada";
+    document.getElementById("salvar-entrada").textContent = "Salvar alterações";
+    abrir("overlay-entrada");
+  }
+
+  function abrirEdicaoSaida(id) {
+    const item = saidasCache.find(s => s.id === id);
+    if (!item) return;
+    editandoSaidaId = id;
+    document.getElementById("saida-descricao").value = item.descricao || "";
+    document.getElementById("saida-categoria").value = item.categoria || "Mercado";
+    document.getElementById("saida-valor").value = item.valorTotal;
+    document.getElementById("saida-tipo").value = item.tipo || "avulsa";
+    document.getElementById("saida-vencimento").value = item.vencimento || "";
+    document.getElementById("titulo-saida").textContent = "Editar conta";
+    document.getElementById("salvar-saida").textContent = "Salvar alterações";
+    abrir("overlay-saida");
+  }
+
+  function abrirEdicaoReceber(id) {
+    const item = receberCache.find(r => r.id === id);
+    if (!item) return;
+    editandoReceberId = id;
+    document.getElementById("receber-nome").value = item.nome || "";
+    document.getElementById("receber-valor").value = item.valorTotal;
+    document.getElementById("receber-descricao").value = item.descricao || "";
+    document.getElementById("receber-data").value = item.data || "";
+    document.getElementById("receber-valor-recebido").value = item.valorRecebido || 0;
+    document.getElementById("receber-editar-recebido-wrap").classList.remove("hidden");
+    document.getElementById("titulo-receber").textContent = "Editar";
+    document.getElementById("salvar-receber").textContent = "Salvar alterações";
+    abrir("overlay-receber");
+  }
+
+  let receberSelecionadoId = null;
+  function abrirRecebimento(id) {
+    const item = receberCache.find(r => r.id === id);
+    if (!item) return;
+    receberSelecionadoId = id;
+    const restante = item.valorTotal - (item.valorRecebido || 0);
+    document.getElementById("recebimento-info").textContent =
+      `${item.nome} — falta receber ${formatarMoeda(restante)}`;
+    document.getElementById("recebimento-valor").value = "";
+    abrir("overlay-recebimento");
+  }
+
+  document.getElementById("salvar-recebimento").addEventListener("click", async () => {
+    const valorAgora = parseFloat(document.getElementById("recebimento-valor").value);
+    if (!valorAgora || valorAgora <= 0) { alert("Coloca um valor válido."); return; }
+
+    const item = receberCache.find(r => r.id === receberSelecionadoId);
+    if (!item) return;
+
+    const novoValorRecebido = (item.valorRecebido || 0) + valorAgora;
+    let novoStatus = "parcial";
+    if (novoValorRecebido >= item.valorTotal) novoStatus = "quitada";
+
+    await updateDoc(doc(db, "a_receber", receberSelecionadoId), {
+      valorRecebido: novoValorRecebido,
+      status: novoStatus
+    });
+
+    // Guarda esse recebimento individual no histórico (igual já faz com pagamento de conta)
+    await addDoc(recebimentosRef, {
+      ownerId: uidAtual,
+      receberId: receberSelecionadoId,
+      nome: item.nome,
+      valor: valorAgora,
+      data: new Date().toISOString().slice(0,10),
+      criadoEm: serverTimestamp()
+    });
+
+    // Cria a entrada automaticamente, já que o dinheiro caiu de verdade
+    await addDoc(entradasRef, {
+      ownerId: uidAtual,
+      valor: valorAgora,
+      origem: item.nome,
+      categoria: "Recebimento - " + (item.descricao || "A receber"),
+      data: new Date().toISOString().slice(0,10),
+      criadoEm: serverTimestamp()
+    });
+
+    fechar("overlay-recebimento");
+  });
+
+  // ---------- REGISTRAR PAGAMENTO ----------
+  let saidaSelecionadaId = null;
+
+  // soma 1 mês numa data "AAAA-MM-DD", ajustando o dia se o mês seguinte for mais curto
+  function somarUmMes(dataStr) {
+    const [ano, mes, dia] = dataStr.split("-").map(Number);
+    let novoMes = mes + 1;
+    let novoAno = ano;
+    if (novoMes > 12) { novoMes = 1; novoAno++; }
+    const ultimoDiaDoMes = new Date(novoAno, novoMes, 0).getDate();
+    const novoDia = Math.min(dia, ultimoDiaDoMes);
+    return `${novoAno}-${String(novoMes).padStart(2, "0")}-${String(novoDia).padStart(2, "0")}`;
+  }
+
+  function somarDias(dataStr, dias) {
+    const [ano, mes, dia] = dataStr.split("-").map(Number);
+    const data = new Date(ano, mes - 1, dia);
+    data.setDate(data.getDate() + dias);
+    return `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, "0")}-${String(data.getDate()).padStart(2, "0")}`;
+  }
+
+  function somarUmAno(dataStr) {
+    const [ano, mes, dia] = dataStr.split("-").map(Number);
+    return `${ano + 1}-${String(mes).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
+  }
+
+  function avancarVencimento(dataStr, tipo) {
+    switch (tipo) {
+      case "diaria": return somarDias(dataStr, 1);
+      case "semanal": return somarDias(dataStr, 7);
+      case "quinzenal": return somarDias(dataStr, 15);
+      case "mensal": case "fixa": return somarUmMes(dataStr); // "fixa" = compatibilidade com contas antigas
+      case "anual": return somarUmAno(dataStr);
+      default: return dataStr; // avulsa não recorre
+    }
+  }
+
+  function abrirPagamento(id) {
+    const saida = saidasCache.find(s => s.id === id);
+    if (!saida) return;
+    saidaSelecionadaId = id;
+    const restante = saida.valorTotal - (saida.valorPago || 0);
+    document.getElementById("pagamento-info").textContent =
+      `${saida.descricao} — falta pagar ${formatarMoeda(restante)}`;
+    document.getElementById("pagamento-valor").value = "";
+    abrir("overlay-pagamento");
+  }
+
+  async function confirmarPagamento(valorPagoAgora) {
+    if (!valorPagoAgora || valorPagoAgora <= 0) { alert("Coloca um valor válido."); return; }
+
+    const saida = saidasCache.find(s => s.id === saidaSelecionadaId);
+    if (!saida) return;
+
+    const novoValorPago = (saida.valorPago || 0) + valorPagoAgora;
+    const ehRecorrente = saida.tipo && saida.tipo !== "avulsa";
+    const totalmentePaga = novoValorPago >= saida.valorTotal;
+
+    let dadosAtualizados;
+    if (totalmentePaga) {
+      // valor total da conta/dívida foi quitado por completo: encerra, sem gerar próxima fatura
+      dadosAtualizados = { valorPago: novoValorPago, status: "quitada" };
+    } else {
+      // pagamento parcial: registra o valor pago e, se for recorrente (ex: parcela de empréstimo,
+      // mensalidade), já empurra o vencimento pra próxima fatura, pra não ficar "vencida" à toa
+      dadosAtualizados = { valorPago: novoValorPago, status: "parcial" };
+      if (ehRecorrente && saida.vencimento) {
+        dadosAtualizados.vencimento = avancarVencimento(saida.vencimento, saida.tipo);
+      }
+    }
+
+    await updateDoc(doc(db, "saidas", saidaSelecionadaId), dadosAtualizados);
+
+    // Guarda esse pagamento individual no histórico (sem precisar de mês/período)
+    await addDoc(pagamentosRef, {
+      ownerId: uidAtual,
+      saidaId: saidaSelecionadaId,
+      descricao: saida.descricao,
+      valor: valorPagoAgora,
+      data: new Date().toISOString().slice(0,10),
+      criadoEm: serverTimestamp()
+    });
+
+    fechar("overlay-pagamento");
+  }
+
+  document.getElementById("salvar-pagamento").addEventListener("click", async () => {
+    const valorPagoAgora = parseFloat(document.getElementById("pagamento-valor").value);
+    await confirmarPagamento(valorPagoAgora);
+  });
+
+  document.getElementById("pagar-tudo").addEventListener("click", async () => {
+    const saida = saidasCache.find(s => s.id === saidaSelecionadaId);
+    if (!saida) return;
+    const restante = saida.valorTotal - (saida.valorPago || 0);
+    await confirmarPagamento(restante);
+  });
+
+  // ---------- HISTÓRICO DE PAGAMENTOS ----------
+  let pagamentosCache = [];
+  onSnapshot(query(pagamentosRef, where("ownerId", "==", uidAtual), orderBy("criadoEm", "desc")), (snap) => {
+    pagamentosCache = [];
+    snap.forEach(docSnap => pagamentosCache.push(docSnap.data()));
+    if (typeof atualizarGraficoAnual === "function") atualizarGraficoAnual();
+  });
+
+  function abrirHistorico(saidaId) {
+    const saida = saidasCache.find(s => s.id === saidaId);
+    if (!saida) return;
+
+    document.getElementById("historico-titulo").textContent = saida.descricao;
+    document.getElementById("historico-resumo").textContent =
+      `Total: ${formatarMoeda(saida.valorTotal)} · Já pago: ${formatarMoeda(saida.valorPago || 0)} · Falta: ${formatarMoeda(Math.max(0, saida.valorTotal - (saida.valorPago || 0)))}`;
+
+    const pagamentosDaConta = pagamentosCache.filter(p => p.saidaId === saidaId);
+    const listaEl = document.getElementById("historico-lista");
+
+    if (pagamentosDaConta.length === 0) {
+      listaEl.innerHTML = '<div class="vazio">Nenhum pagamento registrado ainda</div>';
+    } else {
+      listaEl.innerHTML = pagamentosDaConta.map(p => `
+        <div class="card" style="margin-bottom:8px;">
+          <div class="card-topo" style="margin-bottom:0;">
+            <div class="card-categoria">${formatarData(p.data)}</div>
+            <div class="card-valor valor-sensivel">${formatarMoeda(p.valor)}</div>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    abrir("overlay-historico");
+  }
+
+  // ---------- HISTÓRICO DE RECEBIMENTOS ----------
+  let recebimentosCache = [];
+  onSnapshot(query(recebimentosRef, where("ownerId", "==", uidAtual), orderBy("criadoEm", "desc")), (snap) => {
+    recebimentosCache = [];
+    snap.forEach(docSnap => recebimentosCache.push(docSnap.data()));
+  });
+
+  function abrirHistoricoReceber(receberId) {
+    const item = receberCache.find(r => r.id === receberId);
+    if (!item) return;
+
+    document.getElementById("historico-titulo").textContent = item.nome;
+    document.getElementById("historico-resumo").textContent =
+      `Total: ${formatarMoeda(item.valorTotal)} · Já recebido: ${formatarMoeda(item.valorRecebido || 0)} · Falta: ${formatarMoeda(Math.max(0, item.valorTotal - (item.valorRecebido || 0)))}`;
+
+    const recebimentosDoItem = recebimentosCache.filter(r => r.receberId === receberId);
+    const listaEl = document.getElementById("historico-lista");
+
+    if (recebimentosDoItem.length === 0) {
+      listaEl.innerHTML = '<div class="vazio">Nenhum recebimento registrado ainda</div>';
+    } else {
+      listaEl.innerHTML = recebimentosDoItem.map(r => `
+        <div class="card" style="margin-bottom:8px;">
+          <div class="card-topo" style="margin-bottom:0;">
+            <div class="card-categoria">${formatarData(r.data)}</div>
+            <div class="card-valor entrada valor-sensivel">${formatarMoeda(r.valor)}</div>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    abrir("overlay-historico");
+  }
+
+  // ---------- PAINEL ----------
+  let reservasCache = [];
+  function carregarReservas() {
+    onSnapshot(query(reservasRef, where("ownerId", "==", uidAtual), orderBy("criadoEm", "desc")), (snap) => {
+      reservasCache = [];
+      snap.forEach(docSnap => reservasCache.push(docSnap.data()));
+      atualizarPainel();
+    });
+  }
+
+  // ---------- INVESTIMENTOS ----------
+  let investimentosCache = [];
+  function carregarInvestimentos() {
+    const q = query(investimentosRef, where("ownerId", "==", uidAtual), orderBy("criadoEm", "desc"));
+    onSnapshot(q, (snap) => {
+      investimentosCache = [];
+      const lista = document.getElementById("lista-investimentos");
+      if (snap.empty) {
+        lista.innerHTML = '<div class="vazio">Nenhum investimento lançado ainda</div>';
+      } else {
+        lista.innerHTML = "";
+        snap.forEach(docSnap => {
+          const d = docSnap.data();
+          const id = docSnap.id;
+          investimentosCache.push({ id, ...d });
+          lista.innerHTML += `
+            <div class="card">
+              <div class="card-topo">
+                <div>
+                  <div class="card-titulo">${d.descricao || "Sem descrição"}</div>
+                  <div class="card-categoria">${d.categoria || "Outro"} ${d.data ? "· " + formatarData(d.data) : ""}</div>
+                </div>
+                <div class="card-valor entrada valor-sensivel">+ ${formatarMoeda(d.valor)}</div>
+              </div>
+              <div class="card-acoes">
+                <button class="small secondary" data-excluir-investimento="${id}">🗑️ Excluir</button>
+              </div>
+            </div>`;
+        });
+
+        document.querySelectorAll("[data-excluir-investimento]").forEach(btn => {
+          btn.addEventListener("click", async () => {
+            if (confirm("Excluir esse investimento?")) {
+              await deleteDoc(doc(db, "investimentos", btn.dataset.excluirInvestimento));
+            }
+          });
+        });
+      }
+      atualizarTotalInvestido();
+      atualizarGraficosInvestimentos();
+    });
+  }
+
+  function atualizarTotalInvestido() {
+    const total = investimentosCache.reduce((s, i) => s + (i.valor || 0), 0);
+    document.getElementById("total-investido").textContent = formatarMoeda(total);
+  }
+
+  function atualizarPainel() {
+    const totalEntradas = entradasCache.reduce((s, e) => s + (e.valor || 0), 0);
+    const totalPago = saidasCache.reduce((s, sd) => s + (sd.valorPago || 0), 0);
+    const totalPendente = saidasCache.reduce((s, sd) => s + Math.max(0, (sd.valorTotal || 0) - (sd.valorPago || 0)), 0);
+    const totalAReceber = receberCache.reduce((s, r) => s + Math.max(0, (r.valorTotal || 0) - (r.valorRecebido || 0)), 0);
+    const totalGuardado = reservasCache.reduce((s, r) => s + (r.tipo === "guardado" ? r.valor : -r.valor), 0);
+    const saldo = totalEntradas - totalPago - totalGuardado;
+
+    document.getElementById("total-entradas").textContent = formatarMoeda(totalEntradas);
+    document.getElementById("total-pago").textContent = formatarMoeda(totalPago);
+    document.getElementById("total-pendente").textContent = formatarMoeda(totalPendente);
+    document.getElementById("total-a-receber").textContent = formatarMoeda(totalAReceber);
+    document.getElementById("total-guardado").textContent = formatarMoeda(totalGuardado);
+    document.getElementById("saldo-valor").textContent = formatarMoeda(saldo);
+
+    verificarVencimentos();
+    atualizarGraficos();
+  }
+
+  // ---------- ALERTAS DE VENCIMENTO ----------
+  function verificarVencimentos() {
+    const hoje = new Date();
+    hoje.setHours(0,0,0,0);
+
+    const proximas = saidasCache
+      .filter(s => s.status !== "quitada" && s.vencimento)
+      .map(s => {
+        const venc = new Date(s.vencimento + "T00:00:00");
+        const dias = Math.round((venc - hoje) / (1000 * 60 * 60 * 24));
+        return { ...s, dias };
+      })
+      .filter(s => s.dias <= 5) // vencidas + vencendo em até 5 dias
+      .sort((a, b) => a.dias - b.dias);
+
+    const banner = document.getElementById("banner-alertas");
+    const lista = document.getElementById("lista-alertas");
+
+    if (proximas.length === 0) {
+      banner.classList.add("hidden");
+      return;
+    }
+
+    banner.classList.remove("hidden");
+    lista.innerHTML = proximas.map(s => {
+      let quando;
+      if (s.dias < 0) quando = `Venceu há ${Math.abs(s.dias)} dia(s)`;
+      else if (s.dias === 0) quando = "Vence hoje";
+      else if (s.dias === 1) quando = "Vence amanhã";
+      else quando = `Vence em ${s.dias} dias`;
+      return `<div class="item-alerta"><span>${s.descricao}</span><span class="quando">${quando}</span></div>`;
+    }).join("");
+  }
+
+  // ---------- GRÁFICOS ----------
+  let chartCategorias = null;
+  let chartGeral = null;
+  let chartEvolucaoInvest = null;
+  let chartCategoriasInvest = null;
+
+  function atualizarGraficosInvestimentos() {
+    if (typeof Chart === "undefined") return;
+
+    // Gráfico linha: evolução acumulada do patrimônio ao longo do tempo
+    const ordenados = [...investimentosCache]
+      .filter(i => i.data)
+      .sort((a, b) => a.data.localeCompare(b.data));
+    let acumulado = 0;
+    const labelsEvolucao = [];
+    const valoresEvolucao = [];
+    ordenados.forEach(i => {
+      acumulado += (i.valor || 0);
+      labelsEvolucao.push(formatarData(i.data));
+      valoresEvolucao.push(acumulado);
+    });
+
+    const ctxEvolucao = document.getElementById("grafico-evolucao-investimentos");
+    if (chartEvolucaoInvest) chartEvolucaoInvest.destroy();
+    if (ctxEvolucao && labelsEvolucao.length > 0) {
+      chartEvolucaoInvest = new Chart(ctxEvolucao, {
+        type: "line",
+        data: {
+          labels: labelsEvolucao,
+          datasets: [{
+            label: "Patrimônio acumulado",
+            data: valoresEvolucao,
+            borderColor: "#6c5ce7",
+            backgroundColor: "rgba(108,92,231,0.2)",
+            fill: true,
+            tension: 0.3
+          }]
+        },
+        options: {
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: "#eef0f4" }, grid: { color: "#262b36" } },
+            y: { ticks: { color: "#eef0f4" }, grid: { color: "#262b36" } }
+          }
+        }
+      });
+    }
+
+    // Gráfico pizza: distribuição por tipo de investimento
+    const porCategoria = {};
+    investimentosCache.forEach(i => {
+      const cat = i.categoria || "Outro";
+      porCategoria[cat] = (porCategoria[cat] || 0) + (i.valor || 0);
+    });
+    const catLabels = Object.keys(porCategoria);
+    const catValores = Object.values(porCategoria);
+
+    const ctxCatInvest = document.getElementById("grafico-categorias-investimentos");
+    if (chartCategoriasInvest) chartCategoriasInvest.destroy();
+    if (ctxCatInvest && catLabels.length > 0) {
+      chartCategoriasInvest = new Chart(ctxCatInvest, {
+        type: "pie",
+        data: {
+          labels: catLabels,
+          datasets: [{
+            data: catValores,
+            backgroundColor: ["#6c5ce7", "#2ecc71", "#f1c40f", "#e74c3c", "#3498db", "#e67e22", "#1abc9c"]
+          }]
+        },
+        options: {
+          plugins: { legend: { labels: { color: "#eef0f4", font: { size: 11 } } } }
+        }
+      });
+    }
+  }
+
+  function atualizarGraficos() {
+    if (typeof Chart === "undefined") return;
+
+    // Gráfico 1: entradas por categoria (pizza)
+    const porCategoria = {};
+    entradasCache.forEach(e => {
+      const cat = e.categoria || "Outro";
+      porCategoria[cat] = (porCategoria[cat] || 0) + (e.valor || 0);
+    });
+    const catLabels = Object.keys(porCategoria);
+    const catValores = Object.values(porCategoria);
+
+    const ctxCat = document.getElementById("grafico-categorias");
+    if (chartCategorias) chartCategorias.destroy();
+    if (ctxCat && catLabels.length > 0) {
+      chartCategorias = new Chart(ctxCat, {
+        type: "pie",
+        data: {
+          labels: catLabels,
+          datasets: [{
+            data: catValores,
+            backgroundColor: ["#6c5ce7", "#2ecc71", "#f1c40f", "#e74c3c", "#3498db", "#e67e22"]
+          }]
+        },
+        options: {
+          plugins: { legend: { labels: { color: "#eef0f4", font: { size: 11 } } } }
+        }
+      });
+    }
+
+    // Gráfico 2: visão geral (pago x pendente x a receber x guardado)
+    const totalPago = saidasCache.reduce((s, sd) => s + (sd.valorPago || 0), 0);
+    const totalPendente = saidasCache.reduce((s, sd) => s + Math.max(0, (sd.valorTotal || 0) - (sd.valorPago || 0)), 0);
+    const totalAReceber = receberCache.reduce((s, r) => s + Math.max(0, (r.valorTotal || 0) - (r.valorRecebido || 0)), 0);
+    const totalGuardado = reservasCache.reduce((s, r) => s + (r.tipo === "guardado" ? r.valor : -r.valor), 0);
+
+    const ctxGeral = document.getElementById("grafico-geral");
+    if (chartGeral) chartGeral.destroy();
+    if (ctxGeral) {
+      chartGeral = new Chart(ctxGeral, {
+        type: "bar",
+        data: {
+          labels: ["Pago", "Pendente", "A receber", "Guardado"],
+          datasets: [{
+            data: [totalPago, totalPendente, totalAReceber, Math.max(0, totalGuardado)],
+            backgroundColor: ["#2ecc71", "#e74c3c", "#3498db", "#f1c40f"]
+          }]
+        },
+        options: {
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: "#eef0f4" }, grid: { color: "#262b36" } },
+            y: { ticks: { color: "#eef0f4" }, grid: { color: "#262b36" } }
+          }
+        }
+      });
+    }
+
+    atualizarGraficoAnual();
+  }
+
+  let chartRelatorioAnual = null;
+  const mesesAbrev = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+
+  function popularAnosRelatorio() {
+    const select = document.getElementById("filtro-ano-relatorio");
+    if (select.options.length > 0) return; // já populado
+    const anoAtual = new Date().getFullYear();
+    for (let ano = anoAtual - 5; ano <= anoAtual + 3; ano++) {
+      const opt = document.createElement("option");
+      opt.value = ano;
+      opt.textContent = ano;
+      if (ano === anoAtual) opt.selected = true;
+      select.appendChild(opt);
+    }
+  }
+
+  function atualizarGraficoAnual() {
+    if (typeof Chart === "undefined") return;
+    popularAnosRelatorio();
+
+    const ano = document.getElementById("filtro-ano-relatorio").value || new Date().getFullYear();
+    const entrouPorMes = new Array(12).fill(0);
+    const saiuPorMes = new Array(12).fill(0);
+    const guardadoPorMes = new Array(12).fill(0);
+
+    entradasCache.forEach(e => {
+      if (!e.data || !e.data.startsWith(ano + "-")) return;
+      const mes = parseInt(e.data.slice(5, 7), 10) - 1;
+      entrouPorMes[mes] += (e.valor || 0);
+    });
+
+    pagamentosCache.forEach(p => {
+      if (!p.data || !p.data.startsWith(ano + "-")) return;
+      const mes = parseInt(p.data.slice(5, 7), 10) - 1;
+      saiuPorMes[mes] += (p.valor || 0);
+    });
+
+    reservasCache.forEach(r => {
+      if (!r.data || !r.data.startsWith(ano + "-")) return;
+      const mes = parseInt(r.data.slice(5, 7), 10) - 1;
+      guardadoPorMes[mes] += (r.tipo === "guardado" ? r.valor : -r.valor);
+    });
+
+    document.getElementById("anual-total-entrou").textContent = formatarMoeda(entrouPorMes.reduce((a,b) => a+b, 0));
+    document.getElementById("anual-total-saiu").textContent = formatarMoeda(saiuPorMes.reduce((a,b) => a+b, 0));
+    document.getElementById("anual-total-guardado").textContent = formatarMoeda(guardadoPorMes.reduce((a,b) => a+b, 0));
+
+    const ctx = document.getElementById("grafico-relatorio-anual");
+    if (chartRelatorioAnual) chartRelatorioAnual.destroy();
+    if (ctx) {
+      chartRelatorioAnual = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: mesesAbrev,
+          datasets: [
+            { label: "Entrou", data: entrouPorMes, backgroundColor: "#2ecc71" },
+            { label: "Saiu", data: saiuPorMes, backgroundColor: "#e74c3c" },
+            { label: "Guardado", data: guardadoPorMes, backgroundColor: "#f1c40f" }
+          ]
+        },
+        options: {
+          plugins: { legend: { labels: { color: "#eef0f4", font: { size: 11 } } } },
+          scales: {
+            x: { ticks: { color: "#eef0f4" }, grid: { color: "#262b36" } },
+            y: { ticks: { color: "#eef0f4" }, grid: { color: "#262b36" } }
+          }
+        }
+      });
+    }
+  }
+
+  document.getElementById("filtro-ano-relatorio").addEventListener("change", atualizarGraficoAnual);
+
+  document.getElementById("btn-relatorio-pdf").addEventListener("click", gerarRelatorioPDF);
+
+  function gerarRelatorioPDF() {
+    if (typeof window.jspdf === "undefined") { alert("Não consegui carregar o gerador de PDF. Verifique sua internet."); return; }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    const agora = new Date();
+    const mesAno = agora.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+
+    const totalEntradas = entradasCache.reduce((s, e) => s + (e.valor || 0), 0);
+    const totalPago = saidasCache.reduce((s, sd) => s + (sd.valorPago || 0), 0);
+    const totalPendente = saidasCache.reduce((s, sd) => s + Math.max(0, (sd.valorTotal || 0) - (sd.valorPago || 0)), 0);
+    const totalAReceber = receberCache.reduce((s, r) => s + Math.max(0, (r.valorTotal || 0) - (r.valorRecebido || 0)), 0);
+    const totalGuardado = reservasCache.reduce((s, r) => s + (r.tipo === "guardado" ? r.valor : -r.valor), 0);
+    const saldo = totalEntradas - totalPago - totalGuardado;
+
+    let y = 20;
+    doc.setFontSize(18);
+    doc.text("Relatório Financeiro - Grana Viva", 14, y);
+    y += 7;
+    doc.setFontSize(11);
+    doc.setTextColor(120);
+    doc.text(`Referente a: ${mesAno}  ·  Gerado em ${agora.toLocaleDateString("pt-BR")}`, 14, y);
+    doc.setTextColor(0);
+    y += 12;
+
+    doc.setFontSize(13);
+    doc.text("Resumo geral", 14, y); y += 8;
+    doc.setFontSize(11);
+    const linhas = [
+      [`Saldo disponível`, formatarMoeda(saldo)],
+      [`Total recebido`, formatarMoeda(totalEntradas)],
+      [`Total pago`, formatarMoeda(totalPago)],
+      [`Ainda pendente`, formatarMoeda(totalPendente)],
+      [`A receber`, formatarMoeda(totalAReceber)],
+      [`Guardado`, formatarMoeda(totalGuardado)]
+    ];
+    linhas.forEach(([label, valor]) => {
+      doc.text(label, 14, y);
+      doc.text(valor, 150, y, { align: "right" });
+      y += 7;
+    });
+
+    y += 6;
+    doc.setFontSize(13);
+    doc.text("Entradas", 14, y); y += 8;
+    doc.setFontSize(10);
+    if (entradasCache.length === 0) {
+      doc.text("Nenhuma entrada lançada.", 14, y); y += 6;
+    } else {
+      entradasCache.forEach(e => {
+        if (y > 275) { doc.addPage(); y = 20; }
+        doc.text(`${formatarData(e.data)} · ${e.origem || ""} (${e.categoria || ""})`, 14, y);
+        doc.text(formatarMoeda(e.valor), 190, y, { align: "right" });
+        y += 6;
+      });
+    }
+
+    y += 6;
+    if (y > 260) { doc.addPage(); y = 20; }
+    doc.setFontSize(13);
+    doc.text("Contas / Saídas", 14, y); y += 8;
+    doc.setFontSize(10);
+    if (saidasCache.length === 0) {
+      doc.text("Nenhuma conta lançada.", 14, y); y += 6;
+    } else {
+      saidasCache.forEach(s => {
+        if (y > 275) { doc.addPage(); y = 20; }
+        const statusTxt = s.status === "quitada" ? "Quitada" : (s.status === "parcial" ? "Parcial" : "Pendente");
+        doc.text(`${s.descricao} — ${statusTxt} (pago ${formatarMoeda(s.valorPago || 0)} de ${formatarMoeda(s.valorTotal)})`, 14, y);
+        y += 6;
+      });
+    }
+
+    y += 6;
+    if (y > 260) { doc.addPage(); y = 20; }
+    doc.setFontSize(13);
+    doc.text("A Receber", 14, y); y += 8;
+    doc.setFontSize(10);
+    if (receberCache.length === 0) {
+      doc.text("Ninguém devendo no momento.", 14, y); y += 6;
+    } else {
+      receberCache.forEach(r => {
+        if (y > 275) { doc.addPage(); y = 20; }
+        const statusTxt = r.status === "quitada" ? "Recebido" : (r.status === "parcial" ? "Parcial" : "Pendente");
+        doc.text(`${r.nome} — ${statusTxt} (recebido ${formatarMoeda(r.valorRecebido || 0)} de ${formatarMoeda(r.valorTotal)})`, 14, y);
+        y += 6;
+      });
+    }
+
+    doc.setFontSize(9);
+    doc.setTextColor(150);
+    doc.text("Feito por @nancysantana.dev", 14, 290);
+
+    doc.save(`relatorio-grana-viva-${agora.toISOString().slice(0,7)}.pdf`);
+  }
+
+  // ---------- HELPERS ----------
+  function rotuloTipo(tipo) {
+    const rotulos = {
+      diaria: "Diária", semanal: "Semanal", quinzenal: "Quinzenal",
+      mensal: "Mensal", anual: "Anual", avulsa: "Avulsa",
+      fixa: "Mensal" // compatibilidade com contas antigas salvas como "fixa"
+    };
+    return rotulos[tipo] || "Avulsa";
+  }
+
+  function formatarMoeda(valor) {
+    return (valor || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  }
+  function formatarData(dataStr) {
+    const [ano, mes, dia] = dataStr.split("-");
+    return `${dia}/${mes}/${ano}`;
+  }
+</script>
+
+<script>
+  // Registra o service worker (permite instalar como app / abrir offline)
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js").catch(() => {});
+    });
+  }
+</script>
+
+</body>
+</html>
