@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -408,6 +409,7 @@
     <div class="tab" data-tab="receber">A Receber</div>
     <div class="tab" data-tab="investimentos">Investimentos</div>
     <div class="tab" data-tab="resumo">Resumo</div>
+    <div class="tab" data-tab="economista">📊 Economista</div>
   </div>
 
   <div id="tab-entradas" class="tab-content active">
@@ -442,14 +444,6 @@
       <button class="btn-pdf" id="btn-relatorio-pdf">📄 Baixar relatório do mês (PDF)</button>
     </div>
     <div class="resumo-card">
-      <h3>📅 Relatório mensal</h3>
-      <p style="margin:0 0 10px; font-size:12px; opacity:0.75;">Usa o mês/ano selecionado no topo da tela.</p>
-      <div class="chart-wrap valor-sensivel"><canvas id="grafico-relatorio-mensal"></canvas></div>
-      <div class="linha-resumo"><span>💵 Total entrou no mês</span><span class="valor-sensivel" id="mensal-total-entrou">R$ 0,00</span></div>
-      <div class="linha-resumo"><span>🧾 Total saiu no mês</span><span class="valor-sensivel" id="mensal-total-saiu">R$ 0,00</span></div>
-      <div class="linha-resumo"><span>📦 Guardado no mês</span><span class="valor-sensivel" id="mensal-total-guardado">R$ 0,00</span></div>
-    </div>
-    <div class="resumo-card">
       <h3>📊 Relatório anual</h3>
       <label style="margin-top:0;">Ano</label>
       <select id="filtro-ano-relatorio"></select>
@@ -465,6 +459,25 @@
     <div class="resumo-card">
       <h3>Visão geral do mês</h3>
       <div class="chart-wrap valor-sensivel"><canvas id="grafico-geral"></canvas></div>
+    </div>
+  </div>
+
+  <div id="tab-economista" class="tab-content">
+    <div class="resumo-card">
+      <h3>💹 Taxa de poupança do mês</h3>
+      <div class="linha-resumo"><span>Quanto você guardou/investiu do que entrou</span><span class="valor-sensivel" id="taxa-poupanca-valor">0%</span></div>
+      <p id="taxa-poupanca-comentario" style="font-size:13px; color:#9aa1ac; margin-top:6px;"></p>
+    </div>
+    <div class="resumo-card">
+      <h3>📈 Evolução do patrimônio líquido</h3>
+      <p style="font-size:12px; color:#9aa1ac; margin-top:-4px; margin-bottom:8px;">Soma acumulada de guardado + investido, mês a mês</p>
+      <div class="chart-wrap valor-sensivel"><canvas id="grafico-patrimonio-liquido"></canvas></div>
+    </div>
+    <div class="resumo-card">
+      <h3>🏦 Comparativo com o CDI</h3>
+      <p style="font-size:12px; color:#9aa1ac; margin-top:-4px; margin-bottom:8px;">Crescimento do seu patrimônio guardado vs. o que o CDI teria rendido no mesmo período</p>
+      <div id="cdi-status" style="font-size:13px; color:#9aa1ac; margin-bottom:8px;">Carregando dados do Banco Central...</div>
+      <div class="chart-wrap valor-sensivel"><canvas id="grafico-cdi"></canvas></div>
     </div>
   </div>
 
@@ -565,6 +578,8 @@
     <input type="number" step="0.01" id="reserva-valor" placeholder="Ex: 1000">
     <label>Descrição (opcional)</label>
     <input type="text" id="reserva-descricao" placeholder="Ex: Reserva de emergência">
+    <label>Data</label>
+    <input type="date" id="reserva-data">
     <button id="salvar-reserva">Salvar</button>
   </div>
 </div>
@@ -754,6 +769,7 @@
       document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
       tab.classList.add("active");
       document.getElementById("tab-" + tab.dataset.tab).classList.add("active");
+      if (tab.dataset.tab === "economista") atualizarModoEconomista();
     });
   });
 
@@ -821,19 +837,21 @@
     const tipo = document.getElementById("reserva-tipo").value;
     const valor = parseFloat(document.getElementById("reserva-valor").value);
     const descricao = document.getElementById("reserva-descricao").value.trim();
+    const dataEscolhida = document.getElementById("reserva-data").value || new Date().toISOString().slice(0,10);
 
     if (!valor || valor <= 0) { alert("Coloca um valor válido."); return; }
 
     await addDoc(reservasRef, {
       ownerId: uidAtual,
       tipo, valor, descricao,
-      data: new Date().toISOString().slice(0,10),
+      data: dataEscolhida,
       criadoEm: serverTimestamp()
     });
 
     document.getElementById("reserva-valor").value = "";
     document.getElementById("reserva-descricao").value = "";
     document.getElementById("reserva-tipo").value = "guardado";
+    document.getElementById("reserva-data").value = "";
     fechar("overlay-reserva");
   });
 
@@ -992,7 +1010,6 @@
     renderizarEntradas();
     renderizarSaidas();
     renderizarReceber();
-    atualizarGraficoMensal();
   }
 
   selectMes.addEventListener("change", atualizarFiltroMesEAno);
@@ -1508,12 +1525,220 @@
       }
       atualizarTotalInvestido();
       atualizarGraficosInvestimentos();
+      if (document.getElementById("tab-economista")?.classList.contains("active")) atualizarModoEconomista();
     });
   }
 
   function atualizarTotalInvestido() {
     const total = investimentosCache.reduce((s, i) => s + (i.valor || 0), 0);
     document.getElementById("total-investido").textContent = formatarMoeda(total);
+  }
+
+  // ---------- MODO ECONOMISTA ----------
+  function atualizarModoEconomista() {
+    atualizarTaxaPoupanca();
+    atualizarGraficoPatrimonioLiquido();
+    atualizarComparativoCDI();
+  }
+
+  function atualizarTaxaPoupanca() {
+    const hoje = new Date();
+    const anoMes = hoje.toISOString().slice(0, 7); // "YYYY-MM"
+
+    const entradasMes = entradasCache
+      .filter(e => e.data && e.data.startsWith(anoMes))
+      .reduce((s, e) => s + (e.valor || 0), 0);
+
+    const guardadoMes = reservasCache
+      .filter(r => r.data && r.data.startsWith(anoMes))
+      .reduce((s, r) => s + (r.tipo === "guardado" ? r.valor : -r.valor), 0);
+
+    const investidoMes = investimentosCache
+      .filter(i => i.data && i.data.startsWith(anoMes))
+      .reduce((s, i) => s + (i.valor || 0), 0);
+
+    const poupadoMes = guardadoMes + investidoMes;
+    const taxa = entradasMes > 0 ? (poupadoMes / entradasMes) * 100 : 0;
+
+    const elValor = document.getElementById("taxa-poupanca-valor");
+    const elComentario = document.getElementById("taxa-poupanca-comentario");
+    if (!elValor) return;
+
+    elValor.textContent = `${taxa.toFixed(1)}%`;
+
+    if (entradasMes === 0) {
+      elComentario.textContent = "Ainda não há entradas lançadas este mês pra calcular.";
+    } else if (taxa >= 20) {
+      elComentario.textContent = "Ótimo! Especialistas costumam recomendar guardar pelo menos 20% da renda.";
+    } else if (taxa >= 10) {
+      elComentario.textContent = "Bom ritmo. Ainda dá pra tentar chegar nos 20% recomendados.";
+    } else if (taxa > 0) {
+      elComentario.textContent = "Você está guardando algo, mas abaixo do recomendado (20% da renda).";
+    } else {
+      elComentario.textContent = "Nenhum valor guardado ou investido este mês ainda.";
+    }
+  }
+
+  // Agrupa guardado+investido por mês (YYYY-MM), retorna array ordenado de {mes, valorMes, acumulado}
+  function calcularPatrimonioMensal() {
+    const porMes = {};
+    reservasCache.forEach(r => {
+      if (!r.data) return;
+      const m = r.data.slice(0, 7);
+      porMes[m] = (porMes[m] || 0) + (r.tipo === "guardado" ? r.valor : -r.valor);
+    });
+    investimentosCache.forEach(i => {
+      if (!i.data) return;
+      const m = i.data.slice(0, 7);
+      porMes[m] = (porMes[m] || 0) + (i.valor || 0);
+    });
+
+    const meses = Object.keys(porMes).sort();
+    let acumulado = 0;
+    return meses.map(m => {
+      acumulado += porMes[m];
+      return { mes: m, valorMes: porMes[m], acumulado };
+    });
+  }
+
+  let chartPatrimonioLiquido = null;
+  function atualizarGraficoPatrimonioLiquido() {
+    if (typeof Chart === "undefined") return;
+    const ctx = document.getElementById("grafico-patrimonio-liquido");
+    if (!ctx) return;
+
+    const serie = calcularPatrimonioMensal();
+    if (chartPatrimonioLiquido) chartPatrimonioLiquido.destroy();
+    if (serie.length === 0) return;
+
+    chartPatrimonioLiquido = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: serie.map(p => formatarMesAno(p.mes)),
+        datasets: [{
+          label: "Patrimônio acumulado",
+          data: serie.map(p => p.acumulado),
+          borderColor: "#2ecc71",
+          backgroundColor: "rgba(46,204,113,0.15)",
+          fill: true,
+          tension: 0.3
+        }]
+      },
+      options: {
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: "#eef0f4" }, grid: { color: "#262b36" } },
+          y: { ticks: { color: "#eef0f4" }, grid: { color: "#262b36" } }
+        }
+      }
+    });
+  }
+
+  function formatarMesAno(anoMes) {
+    const [ano, mes] = anoMes.split("-");
+    return `${mesesAbrev[parseInt(mes, 10) - 1]}/${ano.slice(2)}`;
+  }
+
+  // ---------- CDI (API pública do Banco Central) ----------
+  let chartCDI = null;
+  let cdiCacheMensal = null; // { "YYYY-MM": taxaDoMesEmPercentual }
+
+  async function buscarCDIMensal(dataInicial, dataFinal) {
+    // Série 4391 = Taxa de juros - CDI acumulada no mês
+    const fmt = (d) => `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;
+    const url = `https://api.bcb.gov.br/dados/serie/bcdata.sgs.4391/dados?formato=json&dataInicial=${fmt(dataInicial)}&dataFinal=${fmt(dataFinal)}`;
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error("Não foi possível consultar o Banco Central agora.");
+    const dados = await resp.json();
+    const porMes = {};
+    dados.forEach(item => {
+      // item.data vem como "DD/MM/YYYY", representando o mês de referência
+      const [dia, mes, ano] = item.data.split("/");
+      const chave = `${ano}-${mes}`;
+      porMes[chave] = parseFloat(item.valor.replace(",", "."));
+    });
+    return porMes;
+  }
+
+  async function atualizarComparativoCDI() {
+    const ctx = document.getElementById("grafico-cdi");
+    const status = document.getElementById("cdi-status");
+    if (!ctx) return;
+
+    const serie = calcularPatrimonioMensal();
+    if (serie.length < 2) {
+      if (status) status.textContent = "Lance guardado/investimentos em pelo menos 2 meses diferentes pra ver essa comparação.";
+      if (chartCDI) { chartCDI.destroy(); chartCDI = null; }
+      return;
+    }
+
+    try {
+      const primeiroMes = serie[0].mes; // "YYYY-MM"
+      const ultimoMes = serie[serie.length - 1].mes;
+      const [anoIni, mesIni] = primeiroMes.split("-").map(Number);
+      const [anoFim, mesFim] = ultimoMes.split("-").map(Number);
+      const dataInicial = new Date(anoIni, mesIni - 1, 1);
+      const dataFinal = new Date(anoFim, mesFim, 0); // último dia do mês final
+
+      if (!cdiCacheMensal) {
+        cdiCacheMensal = await buscarCDIMensal(dataInicial, dataFinal);
+      }
+
+      // Índice base 100 pra ambas as séries, a partir do primeiro mês com saldo positivo
+      const baseIdx = serie.findIndex(p => p.acumulado > 0);
+      if (baseIdx === -1) {
+        if (status) status.textContent = "Ainda sem saldo acumulado positivo pra comparar.";
+        return;
+      }
+
+      const labels = [];
+      const indicePatrimonio = [];
+      const indiceCDI = [];
+      let fatorCDI = 100;
+      const valorBase = serie[baseIdx].acumulado;
+
+      serie.slice(baseIdx).forEach((p, idx) => {
+        labels.push(formatarMesAno(p.mes));
+        indicePatrimonio.push((p.acumulado / valorBase) * 100);
+
+        const taxaMes = cdiCacheMensal[p.mes.replace("-", "-")] ?? 0; // já está "YYYY-MM"
+        if (idx > 0) fatorCDI *= (1 + taxaMes / 100);
+        indiceCDI.push(fatorCDI);
+      });
+
+      const rendimentoPatrimonio = indicePatrimonio[indicePatrimonio.length - 1] - 100;
+      const rendimentoCDI = indiceCDI[indiceCDI.length - 1] - 100;
+
+      if (status) {
+        if (rendimentoPatrimonio >= rendimentoCDI) {
+          status.textContent = `🎉 Seu patrimônio cresceu ${rendimentoPatrimonio.toFixed(1)}% no período, acima do CDI (${rendimentoCDI.toFixed(1)}%).`;
+        } else {
+          status.textContent = `Seu patrimônio cresceu ${rendimentoPatrimonio.toFixed(1)}% no período, abaixo do CDI (${rendimentoCDI.toFixed(1)}%).`;
+        }
+      }
+
+      if (chartCDI) chartCDI.destroy();
+      chartCDI = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels,
+          datasets: [
+            { label: "Seu patrimônio (indexado)", data: indicePatrimonio, borderColor: "#2ecc71", backgroundColor: "rgba(46,204,113,0.1)", tension: 0.3 },
+            { label: "CDI (indexado)", data: indiceCDI, borderColor: "#f1c40f", backgroundColor: "rgba(241,196,15,0.1)", tension: 0.3, borderDash: [5,5] }
+          ]
+        },
+        options: {
+          plugins: { legend: { labels: { color: "#eef0f4", font: { size: 11 } } } },
+          scales: {
+            x: { ticks: { color: "#eef0f4" }, grid: { color: "#262b36" } },
+            y: { ticks: { color: "#eef0f4" }, grid: { color: "#262b36" } }
+          }
+        }
+      });
+    } catch (erro) {
+      console.error("Erro ao buscar CDI:", erro);
+      if (status) status.textContent = "Não consegui consultar o Banco Central agora. Tenta de novo mais tarde.";
+    }
   }
 
   function atualizarPainel() {
@@ -1533,6 +1758,7 @@
 
     verificarVencimentos();
     atualizarGraficos();
+    if (document.getElementById("tab-economista")?.classList.contains("active")) atualizarModoEconomista();
   }
 
   // ---------- ALERTAS DE VENCIMENTO ----------
@@ -1576,6 +1802,8 @@
   let chartCategoriasInvest = null;
 
   function atualizarGraficosInvestimentos() {
+    if (typeof Chart === "undefined") return;
+
     // Gráfico linha: evolução acumulada do patrimônio ao longo do tempo
     const ordenados = [...investimentosCache]
       .filter(i => i.data)
@@ -1591,7 +1819,7 @@
 
     const ctxEvolucao = document.getElementById("grafico-evolucao-investimentos");
     if (chartEvolucaoInvest) chartEvolucaoInvest.destroy();
-    if (ctxEvolucao && labelsEvolucao.length > 0 && typeof Chart !== "undefined") {
+    if (ctxEvolucao && labelsEvolucao.length > 0) {
       chartEvolucaoInvest = new Chart(ctxEvolucao, {
         type: "line",
         data: {
@@ -1626,7 +1854,7 @@
 
     const ctxCatInvest = document.getElementById("grafico-categorias-investimentos");
     if (chartCategoriasInvest) chartCategoriasInvest.destroy();
-    if (ctxCatInvest && catLabels.length > 0 && typeof Chart !== "undefined") {
+    if (ctxCatInvest && catLabels.length > 0) {
       chartCategoriasInvest = new Chart(ctxCatInvest, {
         type: "pie",
         data: {
@@ -1644,6 +1872,8 @@
   }
 
   function atualizarGraficos() {
+    if (typeof Chart === "undefined") return;
+
     // Gráfico 1: entradas por categoria (pizza)
     const porCategoria = {};
     entradasCache.forEach(e => {
@@ -1655,7 +1885,7 @@
 
     const ctxCat = document.getElementById("grafico-categorias");
     if (chartCategorias) chartCategorias.destroy();
-    if (ctxCat && catLabels.length > 0 && typeof Chart !== "undefined") {
+    if (ctxCat && catLabels.length > 0) {
       chartCategorias = new Chart(ctxCat, {
         type: "pie",
         data: {
@@ -1679,7 +1909,7 @@
 
     const ctxGeral = document.getElementById("grafico-geral");
     if (chartGeral) chartGeral.destroy();
-    if (ctxGeral && typeof Chart !== "undefined") {
+    if (ctxGeral) {
       chartGeral = new Chart(ctxGeral, {
         type: "bar",
         data: {
@@ -1699,7 +1929,6 @@
       });
     }
 
-    atualizarGraficoMensal();
     atualizarGraficoAnual();
   }
 
@@ -1719,52 +1948,8 @@
     }
   }
 
-  let chartRelatorioMensal = null;
-
-  function atualizarGraficoMensal() {
-    // Usa o mesmo filtro global de mês/ano (filtroMesAtual, formato "YYYY-MM")
-    const prefixo = filtroMesAtual;
-
-    const totalEntrouMes = entradasCache
-      .filter(e => e.data && e.data.startsWith(prefixo))
-      .reduce((s, e) => s + (e.valor || 0), 0);
-
-    const totalSaiuMes = pagamentosCache
-      .filter(p => p.data && p.data.startsWith(prefixo))
-      .reduce((s, p) => s + (p.valor || 0), 0);
-
-    const totalGuardadoMes = reservasCache
-      .filter(r => r.data && r.data.startsWith(prefixo))
-      .reduce((s, r) => s + (r.tipo === "guardado" ? r.valor : -r.valor), 0);
-
-    document.getElementById("mensal-total-entrou").textContent = formatarMoeda(totalEntrouMes);
-    document.getElementById("mensal-total-saiu").textContent = formatarMoeda(totalSaiuMes);
-    document.getElementById("mensal-total-guardado").textContent = formatarMoeda(totalGuardadoMes);
-
-    const ctx = document.getElementById("grafico-relatorio-mensal");
-    if (chartRelatorioMensal) chartRelatorioMensal.destroy();
-    if (ctx && typeof Chart !== "undefined") {
-      chartRelatorioMensal = new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels: ["Entrou", "Saiu", "Guardado"],
-          datasets: [{
-            data: [totalEntrouMes, totalSaiuMes, totalGuardadoMes],
-            backgroundColor: ["#2ecc71", "#e74c3c", "#f1c40f"]
-          }]
-        },
-        options: {
-          plugins: { legend: { display: false } },
-          scales: {
-            x: { ticks: { color: "#eef0f4" }, grid: { color: "#262b36" } },
-            y: { ticks: { color: "#eef0f4" }, grid: { color: "#262b36" } }
-          }
-        }
-      });
-    }
-  }
-
   function atualizarGraficoAnual() {
+    if (typeof Chart === "undefined") return;
     popularAnosRelatorio();
 
     const ano = document.getElementById("filtro-ano-relatorio").value || new Date().getFullYear();
@@ -1796,7 +1981,7 @@
 
     const ctx = document.getElementById("grafico-relatorio-anual");
     if (chartRelatorioAnual) chartRelatorioAnual.destroy();
-    if (ctx && typeof Chart !== "undefined") {
+    if (ctx) {
       chartRelatorioAnual = new Chart(ctx, {
         type: "bar",
         data: {
