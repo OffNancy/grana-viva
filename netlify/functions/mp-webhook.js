@@ -49,7 +49,9 @@ async function definirAcesso(email, liberar) {
 exports.handler = async (event) => {
   try {
     if (event.httpMethod !== "POST") {
-      return { statusCode: 405, body: "Method Not Allowed" };
+      // Responde OK pra qualquer verificação/teste de conectividade que o Mercado Pago
+      // (ou o navegador) faça na URL. As notificações reais sempre chegam via POST.
+      return { statusCode: 200, body: "ok (aguardando notificações via POST)" };
     }
 
     const body = JSON.parse(event.body || "{}");
