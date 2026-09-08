@@ -442,6 +442,14 @@
       <button class="btn-pdf" id="btn-relatorio-pdf">📄 Baixar relatório do mês (PDF)</button>
     </div>
     <div class="resumo-card">
+      <h3>📅 Relatório mensal</h3>
+      <p style="margin:0 0 10px; font-size:12px; opacity:0.75;">Usa o mês/ano selecionado no topo da tela.</p>
+      <div class="chart-wrap valor-sensivel"><canvas id="grafico-relatorio-mensal"></canvas></div>
+      <div class="linha-resumo"><span>💵 Total entrou no mês</span><span class="valor-sensivel" id="mensal-total-entrou">R$ 0,00</span></div>
+      <div class="linha-resumo"><span>🧾 Total saiu no mês</span><span class="valor-sensivel" id="mensal-total-saiu">R$ 0,00</span></div>
+      <div class="linha-resumo"><span>📦 Guardado no mês</span><span class="valor-sensivel" id="mensal-total-guardado">R$ 0,00</span></div>
+    </div>
+    <div class="resumo-card">
       <h3>📊 Relatório anual</h3>
       <label style="margin-top:0;">Ano</label>
       <select id="filtro-ano-relatorio"></select>
@@ -984,6 +992,7 @@
     renderizarEntradas();
     renderizarSaidas();
     renderizarReceber();
+    atualizarGraficoMensal();
   }
 
   selectMes.addEventListener("change", atualizarFiltroMesEAno);
@@ -1567,8 +1576,6 @@
   let chartCategoriasInvest = null;
 
   function atualizarGraficosInvestimentos() {
-    if (typeof Chart === "undefined") return;
-
     // Gráfico linha: evolução acumulada do patrimônio ao longo do tempo
     const ordenados = [...investimentosCache]
       .filter(i => i.data)
@@ -1584,7 +1591,7 @@
 
     const ctxEvolucao = document.getElementById("grafico-evolucao-investimentos");
     if (chartEvolucaoInvest) chartEvolucaoInvest.destroy();
-    if (ctxEvolucao && labelsEvolucao.length > 0) {
+    if (ctxEvolucao && labelsEvolucao.length > 0 && typeof Chart !== "undefined") {
       chartEvolucaoInvest = new Chart(ctxEvolucao, {
         type: "line",
         data: {
@@ -1619,7 +1626,7 @@
 
     const ctxCatInvest = document.getElementById("grafico-categorias-investimentos");
     if (chartCategoriasInvest) chartCategoriasInvest.destroy();
-    if (ctxCatInvest && catLabels.length > 0) {
+    if (ctxCatInvest && catLabels.length > 0 && typeof Chart !== "undefined") {
       chartCategoriasInvest = new Chart(ctxCatInvest, {
         type: "pie",
         data: {
@@ -1637,8 +1644,6 @@
   }
 
   function atualizarGraficos() {
-    if (typeof Chart === "undefined") return;
-
     // Gráfico 1: entradas por categoria (pizza)
     const porCategoria = {};
     entradasCache.forEach(e => {
@@ -1650,7 +1655,7 @@
 
     const ctxCat = document.getElementById("grafico-categorias");
     if (chartCategorias) chartCategorias.destroy();
-    if (ctxCat && catLabels.length > 0) {
+    if (ctxCat && catLabels.length > 0 && typeof Chart !== "undefined") {
       chartCategorias = new Chart(ctxCat, {
         type: "pie",
         data: {
@@ -1674,7 +1679,7 @@
 
     const ctxGeral = document.getElementById("grafico-geral");
     if (chartGeral) chartGeral.destroy();
-    if (ctxGeral) {
+    if (ctxGeral && typeof Chart !== "undefined") {
       chartGeral = new Chart(ctxGeral, {
         type: "bar",
         data: {
@@ -1694,6 +1699,7 @@
       });
     }
 
+    atualizarGraficoMensal();
     atualizarGraficoAnual();
   }
 
@@ -1713,8 +1719,52 @@
     }
   }
 
+  let chartRelatorioMensal = null;
+
+  function atualizarGraficoMensal() {
+    // Usa o mesmo filtro global de mês/ano (filtroMesAtual, formato "YYYY-MM")
+    const prefixo = filtroMesAtual;
+
+    const totalEntrouMes = entradasCache
+      .filter(e => e.data && e.data.startsWith(prefixo))
+      .reduce((s, e) => s + (e.valor || 0), 0);
+
+    const totalSaiuMes = pagamentosCache
+      .filter(p => p.data && p.data.startsWith(prefixo))
+      .reduce((s, p) => s + (p.valor || 0), 0);
+
+    const totalGuardadoMes = reservasCache
+      .filter(r => r.data && r.data.startsWith(prefixo))
+      .reduce((s, r) => s + (r.tipo === "guardado" ? r.valor : -r.valor), 0);
+
+    document.getElementById("mensal-total-entrou").textContent = formatarMoeda(totalEntrouMes);
+    document.getElementById("mensal-total-saiu").textContent = formatarMoeda(totalSaiuMes);
+    document.getElementById("mensal-total-guardado").textContent = formatarMoeda(totalGuardadoMes);
+
+    const ctx = document.getElementById("grafico-relatorio-mensal");
+    if (chartRelatorioMensal) chartRelatorioMensal.destroy();
+    if (ctx && typeof Chart !== "undefined") {
+      chartRelatorioMensal = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: ["Entrou", "Saiu", "Guardado"],
+          datasets: [{
+            data: [totalEntrouMes, totalSaiuMes, totalGuardadoMes],
+            backgroundColor: ["#2ecc71", "#e74c3c", "#f1c40f"]
+          }]
+        },
+        options: {
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: "#eef0f4" }, grid: { color: "#262b36" } },
+            y: { ticks: { color: "#eef0f4" }, grid: { color: "#262b36" } }
+          }
+        }
+      });
+    }
+  }
+
   function atualizarGraficoAnual() {
-    if (typeof Chart === "undefined") return;
     popularAnosRelatorio();
 
     const ano = document.getElementById("filtro-ano-relatorio").value || new Date().getFullYear();
@@ -1746,7 +1796,7 @@
 
     const ctx = document.getElementById("grafico-relatorio-anual");
     if (chartRelatorioAnual) chartRelatorioAnual.destroy();
-    if (ctx) {
+    if (ctx && typeof Chart !== "undefined") {
       chartRelatorioAnual = new Chart(ctx, {
         type: "bar",
         data: {
