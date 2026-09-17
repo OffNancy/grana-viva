@@ -395,6 +395,11 @@
     <div id="lista-alertas"></div>
   </div>
 
+  <div id="banner-renovacao" class="banner-alertas hidden" style="background:#3a2a12; border-color:#f1c40f;">
+    <div class="titulo-alerta">💳 Pagamento pendente</div>
+    <div id="texto-renovacao" style="font-size:13px;"></div>
+  </div>
+
   <div class="filtro-mes-wrap">
     <label style="margin:0;">📅 Mês</label>
     <select id="filtro-mes-select"></select>
@@ -410,6 +415,7 @@
     <div class="tab" data-tab="receber">A Receber</div>
     <div class="tab" data-tab="investimentos">Investimentos</div>
     <div class="tab" data-tab="resumo">Resumo</div>
+    <div class="tab hidden" data-tab="economista" id="tab-nav-economista">📈 Economista</div>
   </div>
 
   <div id="tab-entradas" class="tab-content active">
@@ -459,6 +465,43 @@
     <div class="resumo-card">
       <h3>Visão geral do mês</h3>
       <div class="chart-wrap valor-sensivel"><canvas id="grafico-geral"></canvas></div>
+    </div>
+  </div>
+
+  <div id="tab-economista" class="tab-content">
+    <div class="resumo-card">
+      <h3>💼 Saldo inicial (antes de usar o app)</h3>
+      <label>Você já tinha algum valor guardado antes de começar a registrar aqui?</label>
+      <input type="number" step="0.01" id="economista-saldo-inicial" placeholder="Ex: 5000.00">
+      <button id="salvar-saldo-inicial">Salvar saldo inicial</button>
+    </div>
+
+    <div id="economista-vazio" class="resumo-card hidden">
+      <p class="vazio">Lance algumas entradas e contas primeiro para ver seus indicadores aqui.</p>
+    </div>
+
+    <div id="economista-conteudo" class="hidden">
+      <div class="resumo-card">
+        <h3>📊 Taxa de poupança do mês atual</h3>
+        <div class="linha-resumo"><span>% da sua renda que sobrou</span><span class="valor-sensivel" id="economista-taxa-atual">0%</span></div>
+      </div>
+
+      <div class="resumo-card">
+        <h3>📈 Patrimônio: real vs. se tivesse rendido no CDI</h3>
+        <div class="chart-wrap valor-sensivel"><canvas id="grafico-economista-evolucao"></canvas></div>
+        <div class="linha-resumo"><span>💰 Saldo acumulado real</span><span class="valor-sensivel" id="economista-saldo-real">R$ 0,00</span></div>
+        <div class="linha-resumo"><span>🏦 Se tivesse rendido no CDI</span><span class="valor-sensivel" id="economista-saldo-cdi">R$ 0,00</span></div>
+        <div class="linha-resumo"><span>📉 Rendimento que você não teve</span><span class="valor-sensivel" id="economista-diferenca">R$ 0,00</span></div>
+      </div>
+
+      <div class="resumo-card">
+        <h3>🗓️ Taxa de poupança por mês</h3>
+        <div class="chart-wrap valor-sensivel"><canvas id="grafico-economista-poupanca"></canvas></div>
+      </div>
+
+      <div class="resumo-card">
+        <p style="font-size:12px; color:var(--muted); margin:0;">📌 O CDI usado aqui é a taxa mensal divulgada pelo Banco Central (série 4391). O comparativo assume que o valor que sobrou (ou o saldo inicial) tivesse ficado investido rendendo 100% do CDI, mês a mês, em vez de parado na conta.</p>
+      </div>
     </div>
   </div>
 
@@ -651,7 +694,7 @@
   } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
   import {
     getFirestore, collection, addDoc, onSnapshot, query, orderBy, where,
-    doc, updateDoc, serverTimestamp, deleteDoc
+    doc, updateDoc, serverTimestamp, deleteDoc, getDoc, setDoc
   } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -674,7 +717,57 @@
   const recebimentosRef = collection(db, "recebimentos");
   const reservasRef = collection(db, "reservas");
   const investimentosRef = collection(db, "investimentos");
+  const usuariosRef = collection(db, "usuarios");
   let uidAtual = null;
+  let planoAtual = "base";
+  let saldoInicialAtual = 0;
+
+  // ---------- PLANO DO USUÁRIO (base / economista) ----------
+  async function carregarUsuario() {
+    const refUsuario = doc(db, "usuarios", uidAtual);
+    const snap = await getDoc(refUsuario);
+    if (!snap.exists()) {
+      await setDoc(refUsuario, { plano: "base", saldoInicial: 0 });
+      planoAtual = "base";
+      saldoInicialAtual = 0;
+      aplicarPlano();
+    } else {
+      const d = snap.data();
+      planoAtual = d.plano || "base";
+      saldoInicialAtual = d.saldoInicial || 0;
+      aplicarPlano();
+      aplicarBannerRenovacao(d);
+    }
+  }
+
+  function aplicarBannerRenovacao(dadosUsuario) {
+    const banner = document.getElementById("banner-renovacao");
+    const texto = document.getElementById("texto-renovacao");
+    if (dadosUsuario.renovacaoPendente && dadosUsuario.bloqueioApos) {
+      const dias = Math.max(0, Math.ceil((dadosUsuario.bloqueioApos - Date.now()) / (1000 * 60 * 60 * 24)));
+      texto.textContent = `Não conseguimos confirmar seu último pagamento. Você tem ${dias} dia(s) para renovar antes do acesso ser bloqueado.`;
+      banner.classList.remove("hidden");
+    } else {
+      banner.classList.add("hidden");
+    }
+  }
+
+  function aplicarPlano() {
+    const navEconomista = document.getElementById("tab-nav-economista");
+    if (planoAtual === "economista") {
+      navEconomista.classList.remove("hidden");
+      document.getElementById("economista-saldo-inicial").value = saldoInicialAtual || "";
+    } else {
+      navEconomista.classList.add("hidden");
+    }
+  }
+
+  document.getElementById("salvar-saldo-inicial").addEventListener("click", async () => {
+    const valor = parseFloat(document.getElementById("economista-saldo-inicial").value) || 0;
+    saldoInicialAtual = valor;
+    await setDoc(doc(db, "usuarios", uidAtual), { saldoInicial: valor }, { merge: true });
+    atualizarModoEconomista();
+  });
 
   // ---------- LOGIN ----------
   const loginScreen = document.getElementById("login-screen");
@@ -690,7 +783,16 @@
     try {
       await signInWithEmailAndPassword(auth, email, senha);
     } catch (erro) {
-      loginError.textContent = "E-mail ou senha incorretos.";
+      if (erro.code === "auth/user-disabled") {
+        loginError.textContent = "Sua assinatura está vencida. Renove seu plano para voltar a usar o sistema.";
+      } else if (erro.code === "auth/invalid-credential" || erro.code === "auth/wrong-password" || erro.code === "auth/user-not-found") {
+        loginError.textContent = "E-mail ou senha incorretos.";
+      } else {
+        // Erro diferente do normal (rede, muitas tentativas, hora do aparelho errada, etc.)
+        // Mostra o código pra ajudar a identificar a causa real.
+        loginError.textContent = `Não foi possível entrar. Tenta de novo em alguns segundos. (código: ${erro.code || "desconhecido"})`;
+      }
+      console.error("Erro de login:", erro);
     }
   });
 
@@ -729,6 +831,7 @@
       loginScreen.classList.add("hidden");
       appScreen.classList.remove("hidden");
       fabAdd.classList.remove("hidden");
+      carregarUsuario();
       carregarEntradas();
       carregarSaidas();
       carregarReceber();
@@ -1388,6 +1491,7 @@
     pagamentosCache = [];
     snap.forEach(docSnap => pagamentosCache.push(docSnap.data()));
     if (typeof atualizarGraficoAnual === "function") atualizarGraficoAnual();
+    if (typeof atualizarModoEconomista === "function") atualizarModoEconomista();
   });
 
   function abrirHistorico(saidaId) {
@@ -1526,6 +1630,135 @@
 
     verificarVencimentos();
     atualizarGraficos();
+    atualizarModoEconomista();
+  }
+
+  // ---------- MODO ECONOMISTA ----------
+  let cdiCache = null; // evita buscar de novo a cada atualização
+  let chartEconomistaEvolucao = null;
+  let chartEconomistaPoupanca = null;
+
+  async function buscarCDIMensal(dataInicial) {
+    const fmt = (d) => `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;
+    const hoje = new Date();
+    const url = `https://api.bcb.gov.br/dados/serie/bcdata.sgs.4391/dados?formato=json&dataInicial=${fmt(dataInicial)}&dataFinal=${fmt(hoje)}`;
+    try {
+      const resp = await fetch(url);
+      const dados = await resp.json();
+      const mapa = {};
+      dados.forEach(item => {
+        const [dia, mes, ano] = item.data.split("/");
+        mapa[`${ano}-${mes}`] = parseFloat(item.valor.replace(",", ".")) / 100;
+      });
+      return mapa;
+    } catch (e) {
+      console.error("Não foi possível buscar o CDI no Banco Central:", e);
+      return {};
+    }
+  }
+
+  function formatarMesLabel(mesStr) {
+    const [ano, mes] = mesStr.split("-").map(Number);
+    return `${mesesAbrev[mes - 1]}/${String(ano).slice(2)}`;
+  }
+
+  async function atualizarModoEconomista() {
+    if (planoAtual !== "economista") return;
+
+    const mesesSet = new Set();
+    entradasCache.forEach(e => { if (e.data) mesesSet.add(e.data.slice(0, 7)); });
+    pagamentosCache.forEach(p => { if (p.data) mesesSet.add(p.data.slice(0, 7)); });
+
+    const vazio = document.getElementById("economista-vazio");
+    const conteudo = document.getElementById("economista-conteudo");
+
+    if (mesesSet.size === 0) {
+      vazio.classList.remove("hidden");
+      conteudo.classList.add("hidden");
+      return;
+    }
+    vazio.classList.add("hidden");
+    conteudo.classList.remove("hidden");
+
+    const meses = Array.from(mesesSet).sort();
+    const [anoIni, mesIni] = meses[0].split("-").map(Number);
+    const dataInicial = new Date(anoIni, mesIni - 1, 1);
+
+    if (!cdiCache) cdiCache = await buscarCDIMensal(dataInicial);
+
+    let saldoReal = saldoInicialAtual;
+    let saldoCDI = saldoInicialAtual;
+    const labels = [];
+    const serieReal = [];
+    const serieCDI = [];
+    const serieTaxaPoupanca = [];
+
+    meses.forEach(mes => {
+      const totalEntradas = entradasCache
+        .filter(e => e.data && e.data.slice(0, 7) === mes)
+        .reduce((s, e) => s + (e.valor || 0), 0);
+      const totalPago = pagamentosCache
+        .filter(p => p.data && p.data.slice(0, 7) === mes)
+        .reduce((s, p) => s + (p.valor || 0), 0);
+      const sobra = totalEntradas - totalPago;
+      const taxaPoupanca = totalEntradas > 0 ? (sobra / totalEntradas) * 100 : 0;
+
+      saldoReal += sobra;
+
+      const taxaMes = cdiCache[mes] || 0;
+      saldoCDI = saldoCDI * (1 + taxaMes) + sobra;
+
+      labels.push(formatarMesLabel(mes));
+      serieReal.push(Math.round(saldoReal * 100) / 100);
+      serieCDI.push(Math.round(saldoCDI * 100) / 100);
+      serieTaxaPoupanca.push(Math.round(taxaPoupanca * 10) / 10);
+    });
+
+    document.getElementById("economista-taxa-atual").textContent = serieTaxaPoupanca[serieTaxaPoupanca.length - 1] + "%";
+    document.getElementById("economista-saldo-real").textContent = formatarMoeda(saldoReal);
+    document.getElementById("economista-saldo-cdi").textContent = formatarMoeda(saldoCDI);
+    document.getElementById("economista-diferenca").textContent = formatarMoeda(Math.max(0, saldoCDI - saldoReal));
+
+    const ctxEvolucao = document.getElementById("grafico-economista-evolucao");
+    if (chartEconomistaEvolucao) chartEconomistaEvolucao.destroy();
+    if (ctxEvolucao) {
+      chartEconomistaEvolucao = new Chart(ctxEvolucao, {
+        type: "line",
+        data: {
+          labels,
+          datasets: [
+            { label: "Saldo real", data: serieReal, borderColor: "#6c5ce7", backgroundColor: "rgba(108,92,231,0.15)", fill: true, tension: 0.3 },
+            { label: "Se rendesse no CDI", data: serieCDI, borderColor: "#2ecc71", backgroundColor: "rgba(46,204,113,0.1)", fill: true, tension: 0.3 }
+          ]
+        },
+        options: {
+          plugins: { legend: { labels: { color: "#eef0f4" } } },
+          scales: {
+            x: { ticks: { color: "#eef0f4" }, grid: { color: "#262b36" } },
+            y: { ticks: { color: "#eef0f4" }, grid: { color: "#262b36" } }
+          }
+        }
+      });
+    }
+
+    const ctxPoupanca = document.getElementById("grafico-economista-poupanca");
+    if (chartEconomistaPoupanca) chartEconomistaPoupanca.destroy();
+    if (ctxPoupanca) {
+      chartEconomistaPoupanca = new Chart(ctxPoupanca, {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [{ label: "Taxa de poupança (%)", data: serieTaxaPoupanca, backgroundColor: "#f1c40f" }]
+        },
+        options: {
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: "#eef0f4" }, grid: { color: "#262b36" } },
+            y: { ticks: { color: "#eef0f4" }, grid: { color: "#262b36" } }
+          }
+        }
+      });
+    }
   }
 
   // ---------- ALERTAS DE VENCIMENTO ----------
