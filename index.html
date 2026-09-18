@@ -400,6 +400,18 @@
     <div id="texto-renovacao" style="font-size:13px;"></div>
   </div>
 
+  <div class="overlay hidden" id="overlay-boasvindas">
+    <div class="modal">
+      <h2>🎉 Bem-vindo(a) ao Grana Viva!</h2>
+      <p style="color:var(--muted); font-size:14px; line-height:1.5;">
+        Esse é o seu espaço pra organizar as finanças de um jeito simples: lance suas entradas,
+        cadastre suas contas e acompanhe tudo em um só lugar. Qualquer dúvida, é só falar com quem
+        te indicou o sistema.
+      </p>
+      <button id="fechar-boasvindas">Vamos começar!</button>
+    </div>
+  </div>
+
   <div class="filtro-mes-wrap">
     <label style="margin:0;">📅 Mês</label>
     <select id="filtro-mes-select"></select>
@@ -505,7 +517,7 @@
     </div>
   </div>
 
-  <footer>Feito por <a href="https://instagram.com/nancysantana.dev" target="_blank">@nancysantana.dev</a></footer>
+  <footer>Fundadora: <a href="https://instagram.com/nancysantana.dev" target="_blank">@nancysantana.dev</a></footer>
 </div>
 
 <div class="fab hidden" id="fab-add">+</div>
@@ -531,15 +543,9 @@
     <label>Valor recebido (R$)</label>
     <input type="number" step="0.01" id="entrada-valor" placeholder="Ex: 1500">
     <label>De onde veio</label>
-    <input type="text" id="entrada-origem" placeholder="Ex: Fernando - Val Beleza">
+    <input type="text" id="entrada-origem" placeholder="Ex: Cliente João, venda Mary Kay...">
     <label>Categoria</label>
-    <select id="entrada-categoria">
-      <option value="Salário Val">Salário Val</option>
-      <option value="Freela - site">Freela - site</option>
-      <option value="Unhas">Unhas</option>
-      <option value="Brechó">Brechó</option>
-      <option value="Outro">Outro</option>
-    </select>
+    <select id="entrada-categoria"></select>
     <label>Data</label>
     <input type="date" id="entrada-data">
     <button id="salvar-entrada">Salvar entrada</button>
@@ -660,6 +666,7 @@
     <p style="color:var(--muted); font-size:13px; margin-bottom:10px;" id="recebimento-info"></p>
     <label>Valor recebido agora (R$)</label>
     <input type="number" step="0.01" id="recebimento-valor" placeholder="Pode ser parcial">
+    <button id="quitar-recebimento-tudo" class="secondary" style="margin-top:10px;">✅ Recebi tudo (quitar)</button>
     <button id="salvar-recebimento">Confirmar recebimento</button>
   </div>
 </div>
@@ -694,7 +701,7 @@
   } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
   import {
     getFirestore, collection, addDoc, onSnapshot, query, orderBy, where,
-    doc, updateDoc, serverTimestamp, deleteDoc, getDoc, setDoc
+    doc, updateDoc, serverTimestamp, deleteDoc, getDoc, setDoc, arrayUnion
   } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -721,23 +728,51 @@
   let uidAtual = null;
   let planoAtual = "base";
   let saldoInicialAtual = 0;
+  let categoriasEntradaAtual = ["Salário", "Freelance", "Vendas", "Outro"];
+
+  // ---------- CATEGORIAS DE ENTRADA (personalizáveis por usuário) ----------
+  function renderizarCategoriasEntrada(selecionarValor) {
+    const select = document.getElementById("entrada-categoria");
+    let lista = [...categoriasEntradaAtual];
+    if (selecionarValor && !lista.includes(selecionarValor)) lista.unshift(selecionarValor);
+    select.innerHTML = lista.map(c => `<option value="${c}">${c}</option>`).join("")
+      + `<option value="__nova__">➕ Criar nova categoria...</option>`;
+    if (selecionarValor) select.value = selecionarValor;
+  }
+
+  document.getElementById("entrada-categoria").addEventListener("change", async (e) => {
+    if (e.target.value !== "__nova__") return;
+    const nome = (window.prompt("Nome da nova categoria (ex: Mary Kay, Comissões, Aluguel de imóvel...)") || "").trim();
+    if (!nome) {
+      renderizarCategoriasEntrada(categoriasEntradaAtual[0]);
+      return;
+    }
+    if (!categoriasEntradaAtual.includes(nome)) {
+      categoriasEntradaAtual.push(nome);
+      await setDoc(doc(db, "usuarios", uidAtual), { categoriasEntrada: arrayUnion(nome) }, { merge: true });
+    }
+    renderizarCategoriasEntrada(nome);
+  });
 
   // ---------- PLANO DO USUÁRIO (base / economista) ----------
   async function carregarUsuario() {
     const refUsuario = doc(db, "usuarios", uidAtual);
     const snap = await getDoc(refUsuario);
     if (!snap.exists()) {
-      await setDoc(refUsuario, { plano: "base", saldoInicial: 0 });
+      await setDoc(refUsuario, { plano: "base", saldoInicial: 0, categoriasEntrada: categoriasEntradaAtual });
       planoAtual = "base";
       saldoInicialAtual = 0;
       aplicarPlano();
+      abrir("overlay-boasvindas");
     } else {
       const d = snap.data();
       planoAtual = d.plano || "base";
       saldoInicialAtual = d.saldoInicial || 0;
+      if (d.categoriasEntrada && d.categoriasEntrada.length) categoriasEntradaAtual = d.categoriasEntrada;
       aplicarPlano();
       aplicarBannerRenovacao(d);
     }
+    renderizarCategoriasEntrada();
   }
 
   function aplicarBannerRenovacao(dadosUsuario) {
@@ -768,6 +803,8 @@
     await setDoc(doc(db, "usuarios", uidAtual), { saldoInicial: valor }, { merge: true });
     atualizarModoEconomista();
   });
+
+  document.getElementById("fechar-boasvindas").addEventListener("click", () => fechar("overlay-boasvindas"));
 
   // ---------- LOGIN ----------
   const loginScreen = document.getElementById("login-screen");
@@ -872,6 +909,7 @@
     document.getElementById("entrada-valor").value = "";
     document.getElementById("entrada-origem").value = "";
     document.getElementById("entrada-data").value = new Date().toISOString().slice(0,10);
+    renderizarCategoriasEntrada(categoriasEntradaAtual[0]);
     abrir("overlay-entrada");
   });
 
@@ -1161,6 +1199,15 @@
     const lista = document.getElementById("lista-saidas");
     // pendente/parcial ficam sempre visíveis (independente do mês); só as quitadas entram no filtro
     const itens = saidasCache.filter(d => d.status !== "quitada" || estaNoMesFiltrado(d.vencimento));
+
+    // Contas vencendo/vencidas sobem pro topo automaticamente; quitadas ficam por último
+    itens.sort((a, b) => {
+      const prioridade = (item) => item.status === "quitada" ? 2 : (item.vencimento ? 0 : 1);
+      const pa = prioridade(a), pb = prioridade(b);
+      if (pa !== pb) return pa - pb;
+      if (a.vencimento && b.vencimento) return a.vencimento.localeCompare(b.vencimento);
+      return 0;
+    });
     if (itens.length === 0) {
       lista.innerHTML = '<div class="vazio">Nenhuma conta neste período</div>';
     } else {
@@ -1300,7 +1347,7 @@
     editandoEntradaId = id;
     document.getElementById("entrada-valor").value = item.valor;
     document.getElementById("entrada-origem").value = item.origem || "";
-    document.getElementById("entrada-categoria").value = item.categoria || "Outro";
+    renderizarCategoriasEntrada(item.categoria || categoriasEntradaAtual[0]);
     document.getElementById("entrada-data").value = item.data || "";
     document.getElementById("titulo-entrada").textContent = "Editar entrada";
     document.getElementById("salvar-entrada").textContent = "Salvar alterações";
@@ -1351,7 +1398,17 @@
   document.getElementById("salvar-recebimento").addEventListener("click", async () => {
     const valorAgora = parseFloat(document.getElementById("recebimento-valor").value);
     if (!valorAgora || valorAgora <= 0) { alert("Coloca um valor válido."); return; }
+    await confirmarRecebimento(valorAgora);
+  });
 
+  document.getElementById("quitar-recebimento-tudo").addEventListener("click", async () => {
+    const item = receberCache.find(r => r.id === receberSelecionadoId);
+    if (!item) return;
+    const restante = item.valorTotal - (item.valorRecebido || 0);
+    await confirmarRecebimento(restante);
+  });
+
+  async function confirmarRecebimento(valorAgora) {
     const item = receberCache.find(r => r.id === receberSelecionadoId);
     if (!item) return;
 
@@ -1385,7 +1442,7 @@
     });
 
     fechar("overlay-recebimento");
-  });
+  }
 
   // ---------- REGISTRAR PAGAMENTO ----------
   let saidaSelecionadaId = null;
@@ -2098,7 +2155,7 @@
 
     doc.setFontSize(9);
     doc.setTextColor(150);
-    doc.text("Feito por @nancysantana.dev", 14, 290);
+    doc.text("Fundadora: @nancysantana.dev", 14, 290);
 
     doc.save(`relatorio-grana-viva-${agora.toISOString().slice(0,7)}.pdf`);
   }
