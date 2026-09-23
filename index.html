@@ -3,873 +3,2190 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Agenda Viva — protótipo</title>
+<title>Grana Viva</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f1115">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Grana Viva">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
-  :root{
-    --teal-50:#E1F5EE; --teal-100:#9FE1CB; --teal-200:#5DCAA5; --teal-400:#1D9E75;
-    --teal-600:#0F6E56; --teal-800:#085041; --teal-900:#04342C;
-    --coral-50:#FAECE7; --coral-400:#D85A30; --coral-600:#993C1D;
-    --amber-50:#FAEEDA; --amber-200:#EF9F27; --amber-800:#633806;
-    --cream:#FBF9F4; --ink:#1C2622; --ink-soft:#5B6B64; --line:#E4E0D6; --card:#FFFFFF;
+  :root {
+    --bg: #0f1115;
+    --card: #171a21;
+    --border: #262b36;
+    --text: #eef0f4;
+    --muted: #8b93a3;
+    --green: #2ecc71;
+    --yellow: #f1c40f;
+    --red: #e74c3c;
+    --accent: #6c5ce7;
   }
-  *{box-sizing:border-box;}
-  body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:var(--cream);color:var(--ink);}
-  .app{max-width:640px;margin:0 auto;padding:26px 18px 60px;}
-  .brand{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
-  .brand h1{font-family:Georgia,'Times New Roman',serif;font-weight:400;font-size:27px;color:var(--teal-800);margin:0;}
-  .brand .tag{font-size:11px;color:var(--ink-soft);letter-spacing:1.5px;text-transform:uppercase;}
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 70px;
+  }
+  .hidden { display: none !important; }
 
-  .modo-switch{display:flex;gap:6px;background:var(--card);padding:4px;border-radius:10px;border:1px solid var(--line);margin-bottom:16px;}
-  .modo-btn{flex:1;text-align:center;padding:8px;border-radius:7px;cursor:pointer;font-size:12.5px;font-weight:700;color:var(--ink-soft);}
-  .modo-btn.active{background:var(--amber-200);color:var(--amber-800);}
+  /* Tela de login */
+  #login-screen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 20px;
+  }
+  .login-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px 24px;
+    width: 100%;
+    max-width: 360px;
+    text-align: center;
+  }
+  .login-box h1 { font-size: 28px; margin-bottom: 4px; }
+  .login-box p { color: var(--muted); font-size: 14px; margin-bottom: 24px; }
 
-  .tabs{display:flex;gap:6px;background:var(--card);padding:5px;border-radius:12px;border:1px solid var(--line);margin-bottom:22px;}
-  .tab{flex:1;text-align:center;padding:11px 8px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--ink-soft);}
-  .tab.active{background:var(--teal-800);color:#fff;}
-  .screen{display:none;}
-  .screen.active{display:block;animation:fade .25s ease;}
-  @keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+  input, select {
+    width: 100%;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    background: #0f1115;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 15px;
+  }
+  input:focus, select:focus { outline: 2px solid var(--accent); }
+  label {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 6px;
+    margin-top: 4px;
+  }
+  button {
+    width: 100%;
+    padding: 13px;
+    background: var(--accent);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button:active { opacity: 0.85; }
+  button.secondary {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+  button.small {
+    width: auto;
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  #login-error { color: var(--red); font-size: 13px; margin-top: 10px; min-height: 16px; }
 
-  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:16px;}
-  .card h2{font-family:Georgia,serif;font-weight:400;font-size:18px;color:var(--teal-800);margin:0 0 4px;}
-  .muted{color:var(--ink-soft);font-size:13px;}
-  .badge-completo{font-size:10px;background:var(--amber-200);color:var(--amber-800);padding:2px 8px;border-radius:20px;margin-left:8px;vertical-align:middle;}
+  /* App principal */
+  #app-screen { max-width: 480px; margin: 0 auto; padding: 20px 16px; }
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  header h1 { font-size: 22px; }
+  header button.logout {
+    width: auto;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 400;
+  }
 
-  .servico-list{display:flex;flex-direction:column;gap:8px;}
-  .servico-item{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border:2px solid var(--line);border-radius:12px;cursor:pointer;background:#fff;}
-  .servico-item.selected{border-color:var(--teal-600);background:var(--teal-50);}
-  .servico-item .nome{font-weight:700;font-size:15px;}
-  .servico-item .dur{font-size:12px;color:var(--ink-soft);}
-  .servico-item .check{width:20px;height:20px;border-radius:5px;border:2px solid var(--line);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;margin-right:10px;}
-  .servico-item.selected .check{background:var(--teal-600);border-color:var(--teal-600);}
-  .servico-row{display:flex;align-items:center;}
+  /* Painel de saldo */
+  .painel {
+    background: linear-gradient(135deg, #6c5ce7, #4834d4);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .painel .saldo-label { font-size: 13px; opacity: 0.85; }
+  .info-icon {
+    display: inline-block;
+    margin-left: 6px;
+    cursor: pointer;
+    opacity: 0.85;
+    font-size: 13px;
+  }
+  #info-saldo-texto {
+    font-size: 12.5px;
+    line-height: 1.5;
+    background: rgba(0,0,0,0.15);
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin: 6px 0;
+  }
+  .painel .saldo-valor { font-size: 32px; font-weight: 700; margin: 4px 0 12px; }
+  .painel .linha-resumo {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    opacity: 0.9;
+    padding: 4px 0;
+  }
 
-  .prof-list{display:flex;flex-direction:column;gap:8px;}
-  .prof-item{display:flex;align-items:center;gap:10px;padding:12px 14px;border:2px solid var(--line);border-radius:12px;cursor:pointer;background:#fff;}
-  .prof-item.selected{border-color:var(--teal-600);background:var(--teal-50);}
-  .prof-item .nome{font-weight:700;font-size:14px;}
+  /* Abas */
+  .filtro-mes-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 10px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .filtro-mes-wrap select {
+    width: auto;
+    flex: 1;
+    min-width: 90px;
+    margin: 0;
+  }
+  .tabs {
+    display: flex;
+    background: var(--card);
+    border-radius: 10px;
+    padding: 4px;
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+  }
+  .tab {
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+    padding: 9px 4px;
+    border-radius: 8px;
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+    user-select: none;
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+  .tab.active { background: var(--accent); color: white; }
 
-  .total-bar{background:var(--teal-800);color:#fff;padding:12px 16px;border-radius:12px;display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:14px;}
-  .total-bar b{font-size:16px;}
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
 
-  .dias-row{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:18px;}
-  .dia-chip{flex:0 0 auto;text-align:center;padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:#fff;cursor:pointer;min-width:56px;}
-  .dia-chip .dow{font-size:11px;color:var(--ink-soft);text-transform:uppercase;}
-  .dia-chip .num{font-size:17px;font-weight:700;color:var(--ink);}
-  .dia-chip.selected{background:var(--teal-800);border-color:var(--teal-800);}
-  .dia-chip.selected .dow, .dia-chip.selected .num{color:#fff;}
-  .dia-chip.fechado{opacity:0.4;text-decoration:line-through;cursor:not-allowed;}
+  /* Cards de item */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 10px;
+  }
+  .card-topo {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 6px;
+  }
+  .card-titulo { font-size: 15px; font-weight: 600; }
+  .card-categoria { font-size: 12px; color: var(--muted); }
+  .card-valor { font-size: 16px; font-weight: 700; }
+  .card-valor.entrada { color: var(--green); }
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 20px;
+    margin-top: 4px;
+  }
+  .badge.pendente { background: rgba(231,76,60,0.15); color: var(--red); }
+  .badge.parcial { background: rgba(241,196,15,0.15); color: var(--yellow); }
+  .badge.quitada { background: rgba(46,204,113,0.15); color: var(--green); }
+  .card-progresso {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .valor-sensivel { transition: filter 0.15s ease; }
+  body.modo-privado .valor-sensivel {
+    filter: blur(7px);
+    user-select: none;
+  }
+  #privacidade-btn.ativo { color: var(--accent); border-color: var(--accent); }
+  .campo-senha { position: relative; }
+  .campo-senha input { padding-right: 42px !important; }
+  .toggle-senha {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: auto;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    padding: 4px;
+    opacity: 0.75;
+    z-index: 2;
+  }
+  .toggle-senha:hover { opacity: 1; }
+  .card-acoes {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
 
-  .slots-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-  .slot{padding:16px 8px;text-align:center;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;border:2px solid transparent;}
-  .slot.livre{background:var(--teal-100);color:var(--teal-800);}
-  .slot.livre:hover{background:var(--teal-200);}
-  .slot.ocupado{background:var(--line);color:var(--ink-soft);cursor:not-allowed;text-decoration:line-through;opacity:0.6;}
-  .slot.selecionado{background:var(--teal-800);color:#fff;border-color:var(--teal-900);}
+  .fab {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: white;
+    font-size: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    cursor: pointer;
+    z-index: 10;
+  }
 
-  .confirm-box{margin-top:18px;}
-  input[type=text], input[type=number]{width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--line);font-size:15px;}
-  button.primary{width:100%;margin-top:12px;padding:15px;border-radius:12px;border:none;background:var(--teal-800);color:#fff;font-size:16px;font-weight:700;cursor:pointer;}
-  button.primary:disabled{background:var(--line);color:var(--ink-soft);cursor:not-allowed;}
-  button.primary:not(:disabled):hover{background:var(--teal-600);}
-  button.secondary{padding:9px 14px;border-radius:8px;border:1px solid var(--teal-600);background:#fff;color:var(--teal-800);font-size:13px;font-weight:600;cursor:pointer;}
-  button.danger{padding:7px 12px;border-radius:8px;border:1px solid var(--coral-400);background:#fff;color:var(--coral-600);font-size:12px;font-weight:600;cursor:pointer;}
+  /* Modal simples */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    align-items: flex-end;
+    z-index: 20;
+  }
+  .modal {
+    background: var(--card);
+    border-radius: 20px 20px 0 0;
+    padding: 22px 18px 30px;
+    width: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+  .modal h2 { font-size: 18px; margin-bottom: 14px; }
+  .modal-fechar {
+    text-align: right;
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 6px;
+    cursor: pointer;
+  }
 
-  .sucesso{background:var(--teal-50);border:1px solid var(--teal-200);border-radius:14px;padding:26px 20px;text-align:center;}
-  .sucesso .check-big{font-size:40px;}
-  .sucesso h2{color:var(--teal-800);margin:8px 0 4px;}
+  .vazio { text-align: center; color: var(--muted); font-size: 13px; padding: 30px 0; }
 
-  .servico-config{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;background:#fff;}
-  .servico-config .nome{font-weight:600;font-size:14px;}
-  .servico-config select{padding:6px 10px;border-radius:6px;border:1px solid var(--line);font-size:13px;}
-  .servico-config .del-btn{background:none;border:none;color:var(--coral-600);cursor:pointer;font-size:16px;margin-left:8px;padding:4px 8px;}
+  footer { text-align: center; color: var(--muted); font-size: 12px; padding: 24px 0; }
+  footer a { color: var(--muted); }
 
-  .add-servico-row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
-  .add-servico-row input{flex:2;min-width:120px;}
-  .add-servico-row select{flex:1;min-width:90px;padding:11px;border-radius:8px;border:1px solid var(--line);}
+  /* Alertas de vencimento */
+  .banner-alertas {
+    background: rgba(231,76,60,0.12);
+    border: 1px solid rgba(231,76,60,0.4);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+  }
+  .banner-alertas .titulo-alerta {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--red);
+    margin-bottom: 6px;
+  }
+  .banner-alertas .item-alerta {
+    font-size: 13px;
+    color: var(--text);
+    padding: 3px 0;
+    display: flex;
+    justify-content: space-between;
+  }
+  .banner-alertas .item-alerta .quando { color: var(--muted); font-size: 12px; }
 
-  .margem-box{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--amber-50);border-radius:10px;margin-bottom:14px;}
-  .margem-box input{width:80px;flex:none;}
-  .margem-box .txt{font-size:13px;color:var(--amber-800);}
-
-  .agendamentos-list .row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px;}
-  .agendamentos-list .row:last-child{border-bottom:none;}
-  .agendamentos-list .row .svc{font-size:12px;color:var(--teal-800);}
-  .empty{text-align:center;color:var(--ink-soft);font-size:13px;padding:20px 0;}
-
-  .prof-config{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:10px;background:#fff;}
-  .prof-config .top-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
-  .prof-config .nome{font-weight:700;font-size:14px;}
-  .chip-toggle{display:inline-block;padding:5px 10px;border-radius:20px;border:1px solid var(--line);font-size:11px;margin:3px 3px 0 0;cursor:pointer;background:#fff;}
-  .chip-toggle.on{background:var(--teal-600);color:#fff;border-color:var(--teal-600);}
-  .chip-toggle.off-day{background:var(--coral-50);}
-  .chip-toggle.off-day.on{background:var(--coral-400);color:#fff;border-color:var(--coral-400);}
-
-  .faturamento-box{background:var(--teal-900);color:#fff;border-radius:14px;padding:22px;text-align:center;}
-  .faturamento-box .valor{font-size:32px;font-weight:800;margin:6px 0;}
-  .faturamento-box .label{font-size:12px;color:var(--teal-100);text-transform:uppercase;letter-spacing:1px;}
-
-  .assinatura{text-align:center;padding:24px 0 6px;font-size:12px;color:var(--ink-soft);}
-  .assinatura b{color:var(--teal-800);}
+  /* Resumo: gráficos e relatório */
+  .resumo-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .resumo-card h3 { font-size: 14px; margin-bottom: 12px; color: var(--muted); font-weight: 600; }
+  .chart-wrap { position: relative; height: 220px; }
+  .btn-pdf {
+    background: var(--green);
+    margin-bottom: 6px;
+  }
 </style>
 </head>
 <body>
-<div class="app">
 
-  <div class="brand">
-    <h1>Agenda Viva</h1>
-    <div class="tag">Protótipo · demonstração</div>
+<!-- TELA DE LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <h1>Grana Viva</h1>
+    <p>Seu controle financeiro, em tempo real</p>
+    <input type="email" id="login-email" placeholder="E-mail" autocomplete="username">
+    <div class="campo-senha">
+      <input type="password" id="login-password" placeholder="Senha" autocomplete="current-password">
+      <button type="button" class="toggle-senha" id="toggle-senha">👁️</button>
+    </div>
+    <button id="login-btn">Entrar</button>
+    <div id="login-error"></div>
   </div>
-
-  <div class="modo-switch">
-    <div class="modo-btn" data-modo="essencial" onclick="mudarModo('essencial')">Plano Essencial</div>
-    <div class="modo-btn active" data-modo="completo" onclick="mudarModo('completo')">Plano Completo</div>
-  </div>
-
-  <div class="tabs" id="tabsRow">
-    <div class="tab active" data-screen="cliente">Visão da cliente</div>
-    <div class="tab" data-screen="agendamentos">Meus agendamentos</div>
-    <div class="tab" data-screen="painel">Painel do salão</div>
-  </div>
-
-  <div id="cliente" class="screen active">
-    <div class="card">
-      <h2>O que você quer fazer?</h2>
-      <p class="muted" id="servicoHint">Pode escolher mais de um serviço — o tempo total já é calculado</p>
-      <div class="servico-list" id="servicoList"></div>
-      <div class="total-bar" id="totalBar" style="display:none"></div>
-    </div>
-
-    <div class="card" id="profCard" style="display:none">
-      <h2>Prefere alguém específico?</h2>
-      <div class="prof-list" id="profList"></div>
-    </div>
-
-    <div class="card" id="diaHorarioCard" style="display:none">
-      <h2>Escolha o dia e o horário</h2>
-      <div class="dias-row" id="diasRow"></div>
-      <div class="slots-grid" id="slotsGrid"></div>
-    </div>
-
-    <div id="confirmBox"></div>
-    <div id="sucessoBox"></div>
-  </div>
-
-  <div id="agendamentos" class="screen">
-    <div class="card">
-      <h2>Meus agendamentos <span class="badge-completo">Completo</span></h2>
-      <p class="muted">Você pode cancelar direto por aqui, sem precisar ligar</p>
-      <div id="meusAgendamentosList"></div>
-    </div>
-  </div>
-
-  <div id="painel" class="screen">
-
-    <div class="card" id="faturamentoCard">
-      <h2>Faturamento do mês <span class="badge-completo">Completo</span></h2>
-      <div class="faturamento-box">
-        <div class="label">Total agendado</div>
-        <div class="valor" id="faturamentoValor">R$ 0,00</div>
-        <div class="label" id="faturamentoQtd">0 agendamentos</div>
-      </div>
-    </div>
-
-    <div class="card" id="profissionaisCard">
-      <h2>Profissionais</h2>
-      <p class="muted" id="profissionaisHint">Cada uma com seus serviços e dias que não trabalha</p>
-      <div id="profissionaisConfigList"></div>
-      <div class="add-servico-row">
-        <input type="text" id="novoProfNome" placeholder="Nome da nova profissional">
-        <button class="secondary" id="addProfBtn">+ Adicionar</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Dias fechados (feriado, folga do salão)</h2>
-      <p class="muted">O salão inteiro não atende nesses dias</p>
-      <div class="dias-row" id="diasFechadoConfig"></div>
-    </div>
-
-    <div class="card">
-      <h2>Horário de almoço</h2>
-      <p class="muted">Bloqueia esse intervalo automaticamente pra todas</p>
-      <div class="margem-box">
-        <label style="display:flex;align-items:center;gap:6px;font-size:13px">
-          <input type="checkbox" id="almocoAtivo" style="width:auto"> Ativo
-        </label>
-        <input type="text" id="almocoInicio" value="12:00" style="width:80px">
-        <span class="txt">até</span>
-        <input type="text" id="almocoFim" value="13:00" style="width:80px">
-      </div>
-    </div>
-
-    <div class="card" id="lembreteCard">
-      <h2>Lembrete automático <span class="badge-completo">Completo</span></h2>
-      <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer">
-        <input type="checkbox" id="lembreteAtivo" checked>
-        Enviar lembrete por WhatsApp 3h antes do horário
-      </label>
-    </div>
-
-    <div class="card">
-      <h2>Moeda</h2>
-      <p class="muted">Usado em todos os preços do sistema</p>
-      <select id="moedaSelect" style="width:100%;padding:11px;border-radius:8px;border:1px solid var(--line);font-size:14px">
-        <option value="R$">R$ — Real (Brasil)</option>
-        <option value="€">€ — Euro (Portugal)</option>
-      </select>
-      <p class="muted" style="margin-top:10px;font-size:12px;background:var(--amber-50);padding:10px 12px;border-radius:8px">
-        ⚠️ Trocar a moeda só muda o símbolo (R$ ou €) — os valores dos serviços continuam os mesmos números. Depois de trocar, ajuste cada preço manualmente aqui embaixo, em "Serviços e duração".
-      </p>
-    </div>
-
-    <div class="card">
-      <h2>Formas de pagamento aceitas</h2>
-      <div id="pagamentoOpcoes"></div>
-    </div>
-
-    <div class="card">
-      <h2>Margem de segurança</h2>
-      <p class="muted">Tempo extra somado em cada atendimento</p>
-      <div class="margem-box">
-        <input type="text" id="margemInput" value="0:15" style="width:80px">
-        <span class="txt">horas:minutos extras por atendimento (ex: 0:15 = 15 min, 1:00 = 1 hora)</span>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Serviços e duração</h2>
-      <div id="servicoConfigList"></div>
-      <div class="add-servico-row">
-        <input type="text" id="novoServicoNome" placeholder="Nome do novo serviço">
-        <select id="novoServicoDuracao">
-          <option value="15">15 min</option>
-          <option value="30" selected>30 min</option>
-          <option value="45">45 min</option>
-          <option value="60">60 min</option>
-          <option value="90">90 min</option>
-          <option value="120">120 min</option>
-        </select>
-        <input type="number" id="novoServicoPreco" placeholder="R$" step="0.01" style="flex:1;min-width:80px">
-        <button class="secondary" id="addServicoBtn">+ Adicionar</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Agendamentos</h2>
-      <div class="dias-row" id="diasRowPainel"></div>
-      <div class="agendamentos-list" id="agendamentosList"></div>
-    </div>
-  </div>
-
-  <div class="assinatura">Desenvolvido por <b>InancyDev</b> · @nancysantana.dev</div>
-
 </div>
 
-<script>
-let modo = 'completo'; // 'essencial' | 'completo'
-
-let SERVICOS = [
-  { id:'escova', nome:'Escova', duracao:45, preco:35 },
-  { id:'manicure', nome:'Manicure', duracao:30, preco:30 },
-  { id:'pedicure', nome:'Pedicure', duracao:40, preco:35 },
-  { id:'coloracao', nome:'Coloração', duracao:120, preco:150 },
-  { id:'maquiagem', nome:'Maquiagem', duracao:60, preco:180 },
-  { id:'sobrancelha', nome:'Design de sobrancelha', duracao:30, preco:50 },
-  { id:'depilacao', nome:'Depilação', duracao:50, preco:30 },
-  { id:'podologia', nome:'Podologia', duracao:60, preco:180 },
-  { id:'cilios', nome:'extensão de cílios', duracao:120, preco:250 },
-];
-
-let MARGEM_SEGURANCA = 15;
-let LEMBRETE_ATIVO = true;
-let MOEDA = 'R$'; // 'R$' (Brasil) ou '€' (Portugal)
-
-let FORMAS_PAGAMENTO = { pix: true, dinheiro: true, debito: true, credito: true };
-const LABELS_PAGAMENTO = { pix: 'Pix', dinheiro: 'Dinheiro', debito: 'Cartão débito', credito: 'Cartão crédito' };
-
-const DIAS = [
-  {label:'Hoje', dow:'Seg', num:16},
-  {label:'Amanhã', dow:'Ter', num:17},
-  {dow:'Qua', num:18},
-  {dow:'Qui', num:19},
-  {dow:'Sex', num:20},
-  {dow:'Sáb', num:21},
-];
-
-// exemplo real: salão fecha terça (índice 1); Bruna (manicure) não trabalha quinta (índice 3)
-let DIA_FECHADO = { 0:false, 1:true, 2:false, 3:false, 4:false, 5:false };
-
-let HORARIO_ALMOCO = { ativo: true, inicio: 12*60, fim: 13*60 };
-
-const HORA_INICIO = 9*60;
-const HORA_FIM = 19*60;
-const GRANULARIDADE = 30;
-
-let PROFISSIONAIS = [
-  { id:'pr1', nome:'Bruna', servicos:['manicure','pedicure','escova','coloracao','maquiagem','cilios'], diasIndisponiveis:[3] },
-  { id:'pr2', nome:'Sara', servicos:['sobrancelha','depilacao','podologia'], diasIndisponiveis:[] },
-  { id:'pr3', nome:'Nancy', servicos:['manicure','pedicure'], diasIndisponiveis:[] },
-];
-
-function minutosParaHora(min){
-  const h = Math.floor(min/60).toString().padStart(2,'0');
-  const m = (min%60).toString().padStart(2,'0');
-  return `${h}:${m}`;
-}
-
-function formatarDuracao(min){
-  const h = Math.floor(min/60);
-  const m = min % 60;
-  if(h && m) return `${h}h ${m}min`;
-  if(h) return `${h}h`;
-  return `${m}min`;
-}
-
-function textoFormasPagamento(){
-  const ativas = Object.keys(FORMAS_PAGAMENTO).filter(k => FORMAS_PAGAMENTO[k]).map(k => LABELS_PAGAMENTO[k]);
-  if(!ativas.length) return 'Pagamento no dia, direto no salão';
-  return `Pagamento no dia, direto no salão — aceita ${ativas.join(', ')}`;
-}
-
-// agenda[dia] = array de bookings: { id, inicio, fim, cliente, servicoNomes, preco, profId }
-let agenda = {};
-DIAS.forEach((d,i) => { agenda[i] = []; });
-agenda[0].push({ id:'b1', inicio: 10*60, fim: 10*60+60+15, cliente:'Marina', servicoNomes:'Manicure', preco:30, profId:'pr1' });
-agenda[0].push({ id:'b2', inicio: 14*60, fim: 14*60+120+15, cliente:'Débora', servicoNomes:'Coloração', preco:150, profId:'pr1' });
-
-let servicosSelecionados = [];
-let profSelecionada = null; // null = sem preferência
-let diaSelecionado = 0;
-let horarioSelecionado = null;
-let meusAgendamentos = []; // bookings feitos nesta sessão, pra tela "meus agendamentos"
-let avisos = [];
-
-window.mudarModo = function(m){
-  modo = m;
-  document.querySelectorAll('.modo-btn').forEach(b => b.classList.toggle('active', b.dataset.modo === m));
-  document.querySelector('.tab[data-screen="agendamentos"]').style.display = (m === 'completo') ? 'block' : 'none';
-  document.getElementById('lembreteCard').style.display = (m === 'completo') ? 'block' : 'none';
-  document.getElementById('faturamentoCard').style.display = (m === 'completo') ? 'block' : 'none';
-  document.getElementById('profissionaisHint').textContent = m === 'completo'
-    ? 'Cada uma com seus serviços e dias que não trabalha'
-    : 'No Essencial, até 2 profissionais. Pra mais que isso, o Plano Completo libera quantidade ilimitada.';
-  servicosSelecionados = [];
-  profSelecionada = null;
-  horarioSelecionado = null;
-  document.getElementById('confirmBox').innerHTML = '';
-  document.getElementById('sucessoBox').innerHTML = '';
-  document.getElementById('diaHorarioCard').style.display = 'none';
-  document.getElementById('profCard').style.display = 'none';
-  document.getElementById('servicoHint').textContent = m === 'completo'
-    ? 'Pode escolher mais de um serviço — o tempo total já é calculado'
-    : 'Pode escolher até 2 serviços juntos (ex: mão + pé) — o tempo total já é calculado';
-  renderServicoList();
-  renderPainel();
-};
-
-// profissionais que fazem TODOS os serviços selecionados
-// no Essencial, só as 2 primeiras profissionais cadastradas contam
-function profissionaisCapazes(){
-  const base = modo === 'essencial' ? PROFISSIONAIS.slice(0, 2) : PROFISSIONAIS;
-  return base.filter(p => servicosSelecionados.every(sid => p.servicos.includes(sid)));
-}
-
-function servicosDisponiveis(){
-  const profsBase = modo === 'essencial' ? PROFISSIONAIS.slice(0, 2) : PROFISSIONAIS;
-  const idsComServico = new Set();
-  profsBase.forEach(p => p.servicos.forEach(sid => idsComServico.add(sid)));
-  return SERVICOS.filter(s => idsComServico.has(s.id));
-}
-
-function renderServicoList(){
-  const disponiveis = servicosDisponiveis();
-
-  const box = document.getElementById('servicoList');
-  box.innerHTML = disponiveis.map(s => `
-    <div class="servico-item ${servicosSelecionados.includes(s.id)?'selected':''}" onclick="toggleServico('${s.id}')">
-      <div class="servico-row"><span class="check">${servicosSelecionados.includes(s.id)?'✓':''}</span><span class="nome">${s.nome}</span></div>
-      <span class="dur">${s.duracao} min · ${MOEDA} ${s.preco.toFixed(2).replace('.',',')}</span>
+<!-- TELA PRINCIPAL -->
+<div id="app-screen" class="hidden">
+  <header>
+    <h1>💰 Grana Viva</h1>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <button class="logout" id="privacidade-btn" title="Esconder valores">👁️</button>
+      <button class="logout" id="logout-btn">Sair</button>
     </div>
-  `).join('');
+  </header>
 
-  const totalBar = document.getElementById('totalBar');
-  if(servicosSelecionados.length){
-    const somaTempo = servicosSelecionados.reduce((t,id)=> t + SERVICOS.find(x=>x.id===id).duracao, 0);
-    const somaPreco = servicosSelecionados.reduce((t,id)=> t + SERVICOS.find(x=>x.id===id).preco, 0);
-    totalBar.style.display = 'flex';
-    totalBar.innerHTML = `<span>${servicosSelecionados.length} serviço${servicosSelecionados.length>1?'s':''} · ${formatarDuracao(somaTempo+MARGEM_SEGURANCA)} total</span><b>${MOEDA} ${somaPreco.toFixed(2).replace('.',',')}</b>`;
-  } else {
-    totalBar.style.display = 'none';
+  <div class="painel">
+    <div class="saldo-label">
+      Saldo disponível (conta normal)
+      <span id="btn-info-saldo" class="info-icon" title="O que significa esse valor?">ⓘ</span>
+    </div>
+    <div id="info-saldo-texto" class="hidden">
+      Saldo = Total recebido − Total pago − Guardado.<br>
+      É o dinheiro livre hoje, já descontando o que foi pago e o que você separou/guardou. Não inclui contas ainda pendentes nem valores a receber, pois esses ainda não aconteceram de fato.
+    </div>
+    <div class="saldo-valor valor-sensivel" id="saldo-valor">R$ 0,00</div>
+    <div class="linha-resumo"><span>Total recebido</span><span class="valor-sensivel" id="total-entradas">R$ 0,00</span></div>
+    <div class="linha-resumo"><span>Total pago</span><span class="valor-sensivel" id="total-pago">R$ 0,00</span></div>
+    <div class="linha-resumo"><span>Ainda pendente</span><span class="valor-sensivel" id="total-pendente">R$ 0,00</span></div>
+    <div class="linha-resumo"><span>A receber</span><span class="valor-sensivel" id="total-a-receber">R$ 0,00</span></div>
+    <div class="linha-resumo"><span>📦 Guardado</span><span class="valor-sensivel" id="total-guardado">R$ 0,00</span></div>
+  </div>
+
+  <div id="banner-alertas" class="banner-alertas hidden">
+    <div class="titulo-alerta">⚠️ Contas vencendo</div>
+    <div id="lista-alertas"></div>
+  </div>
+
+  <div id="banner-renovacao" class="banner-alertas hidden" style="background:#3a2a12; border-color:#f1c40f;">
+    <div class="titulo-alerta">💳 Pagamento pendente</div>
+    <div id="texto-renovacao" style="font-size:13px;"></div>
+  </div>
+
+  <div class="overlay hidden" id="overlay-boasvindas">
+    <div class="modal">
+      <h2>🎉 Bem-vindo(a) ao Grana Viva!</h2>
+      <p style="color:var(--muted); font-size:14px; line-height:1.5;">
+        Esse é o seu espaço pra organizar as finanças de um jeito simples: lance suas entradas,
+        cadastre suas contas e acompanhe tudo em um só lugar. Qualquer dúvida, é só falar com quem
+        te indicou o sistema.
+      </p>
+      <button id="fechar-boasvindas">Vamos começar!</button>
+    </div>
+  </div>
+
+  <div class="filtro-mes-wrap">
+    <label style="margin:0;">📅 Mês</label>
+    <select id="filtro-mes-select"></select>
+    <select id="filtro-ano-select"></select>
+    <label style="display:flex; align-items:center; gap:6px; margin:0; font-size:13px;">
+      <input type="checkbox" id="ver-todos-meses" style="width:auto;"> Ver tudo
+    </label>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="entradas">Entradas</div>
+    <div class="tab" data-tab="saidas">Contas / Saídas</div>
+    <div class="tab" data-tab="receber">A Receber</div>
+    <div class="tab" data-tab="investimentos">Investimentos</div>
+    <div class="tab" data-tab="resumo">Resumo</div>
+    <div class="tab hidden" data-tab="economista" id="tab-nav-economista">📈 Economista</div>
+  </div>
+
+  <div id="tab-entradas" class="tab-content active">
+    <div id="lista-entradas"><div class="vazio">Nenhuma entrada lançada ainda</div></div>
+  </div>
+
+  <div id="tab-saidas" class="tab-content">
+    <div id="lista-saidas"><div class="vazio">Nenhuma conta lançada ainda</div></div>
+  </div>
+
+  <div id="tab-receber" class="tab-content">
+    <div id="lista-receber"><div class="vazio">Ninguém te deve nada por aqui ainda</div></div>
+  </div>
+
+  <div id="tab-investimentos" class="tab-content">
+    <div class="resumo-card">
+      <div class="linha-resumo"><span>💰 Total investido</span><span class="valor-sensivel" id="total-investido">R$ 0,00</span></div>
+    </div>
+    <div class="resumo-card">
+      <h3>Evolução do patrimônio</h3>
+      <div class="chart-wrap valor-sensivel"><canvas id="grafico-evolucao-investimentos"></canvas></div>
+    </div>
+    <div class="resumo-card">
+      <h3>Distribuição por tipo</h3>
+      <div class="chart-wrap valor-sensivel"><canvas id="grafico-categorias-investimentos"></canvas></div>
+    </div>
+    <div id="lista-investimentos"><div class="vazio">Nenhum investimento lançado ainda</div></div>
+  </div>
+
+  <div id="tab-resumo" class="tab-content">
+    <div class="resumo-card">
+      <button class="btn-pdf" id="btn-relatorio-pdf">📄 Baixar relatório do mês (PDF)</button>
+    </div>
+    <div class="resumo-card">
+      <h3>📊 Relatório anual</h3>
+      <label style="margin-top:0;">Ano</label>
+      <select id="filtro-ano-relatorio"></select>
+      <div class="chart-wrap valor-sensivel"><canvas id="grafico-relatorio-anual"></canvas></div>
+      <div class="linha-resumo"><span>💵 Total entrou no ano</span><span class="valor-sensivel" id="anual-total-entrou">R$ 0,00</span></div>
+      <div class="linha-resumo"><span>🧾 Total saiu no ano</span><span class="valor-sensivel" id="anual-total-saiu">R$ 0,00</span></div>
+      <div class="linha-resumo"><span>📦 Total guardado no ano</span><span class="valor-sensivel" id="anual-total-guardado">R$ 0,00</span></div>
+    </div>
+    <div class="resumo-card">
+      <h3>Entradas por categoria</h3>
+      <div class="chart-wrap valor-sensivel"><canvas id="grafico-categorias"></canvas></div>
+    </div>
+    <div class="resumo-card">
+      <h3>Visão geral do mês</h3>
+      <div class="chart-wrap valor-sensivel"><canvas id="grafico-geral"></canvas></div>
+    </div>
+  </div>
+
+  <div id="tab-economista" class="tab-content">
+    <div class="resumo-card">
+      <h3>💼 Saldo inicial (antes de usar o app)</h3>
+      <label>Você já tinha algum valor guardado antes de começar a registrar aqui?</label>
+      <input type="number" step="0.01" id="economista-saldo-inicial" placeholder="Ex: 5000.00">
+      <button id="salvar-saldo-inicial">Salvar saldo inicial</button>
+    </div>
+
+    <div id="economista-vazio" class="resumo-card hidden">
+      <p class="vazio">Lance algumas entradas e contas primeiro para ver seus indicadores aqui.</p>
+    </div>
+
+    <div id="economista-conteudo" class="hidden">
+      <div class="resumo-card">
+        <h3>📊 Taxa de poupança do mês atual</h3>
+        <div class="linha-resumo"><span>% da sua renda que sobrou</span><span class="valor-sensivel" id="economista-taxa-atual">0%</span></div>
+      </div>
+
+      <div class="resumo-card">
+        <h3>📈 Patrimônio: real vs. se tivesse rendido no CDI</h3>
+        <div class="chart-wrap valor-sensivel"><canvas id="grafico-economista-evolucao"></canvas></div>
+        <div class="linha-resumo"><span>💰 Saldo acumulado real</span><span class="valor-sensivel" id="economista-saldo-real">R$ 0,00</span></div>
+        <div class="linha-resumo"><span>🏦 Se tivesse rendido no CDI</span><span class="valor-sensivel" id="economista-saldo-cdi">R$ 0,00</span></div>
+        <div class="linha-resumo"><span>📉 Rendimento que você não teve</span><span class="valor-sensivel" id="economista-diferenca">R$ 0,00</span></div>
+      </div>
+
+      <div class="resumo-card">
+        <h3>🗓️ Taxa de poupança por mês</h3>
+        <div class="chart-wrap valor-sensivel"><canvas id="grafico-economista-poupanca"></canvas></div>
+      </div>
+
+      <div class="resumo-card">
+        <p style="font-size:12px; color:var(--muted); margin:0;">📌 O CDI usado aqui é a taxa mensal divulgada pelo Banco Central (série 4391). O comparativo assume que o valor que sobrou (ou o saldo inicial) tivesse ficado investido rendendo 100% do CDI, mês a mês, em vez de parado na conta.</p>
+      </div>
+    </div>
+  </div>
+
+  <footer>Fundadora: <a href="https://instagram.com/nancysantana.dev" target="_blank">@nancysantana.dev</a></footer>
+</div>
+
+<div class="fab hidden" id="fab-add">+</div>
+
+<!-- MODAL: escolher tipo -->
+<div class="overlay hidden" id="overlay-escolha">
+  <div class="modal">
+    <div class="modal-fechar" data-fechar="overlay-escolha">Fechar ✕</div>
+    <h2>O que você quer lançar?</h2>
+    <button id="btn-nova-entrada" style="margin-bottom:10px;">💵 Nova entrada (recebi)</button>
+    <button id="btn-nova-saida" class="secondary" style="margin-bottom:10px;">🧾 Nova conta / saída (devo, paguei)</button>
+    <button id="btn-novo-receber" class="secondary" style="margin-bottom:10px;">🤝 Alguém me deve (a receber)</button>
+    <button id="btn-novo-investimento" class="secondary" style="margin-bottom:10px;">📈 Novo investimento (aporte)</button>
+    <button id="btn-guardar" class="secondary">📦 Guardar / Resgatar dinheiro</button>
+  </div>
+</div>
+
+<!-- MODAL: nova entrada -->
+<div class="overlay hidden" id="overlay-entrada">
+  <div class="modal">
+    <div class="modal-fechar" data-fechar="overlay-entrada">Fechar ✕</div>
+    <h2 id="titulo-entrada">Nova entrada</h2>
+    <label>Valor recebido (R$)</label>
+    <input type="number" step="0.01" id="entrada-valor" placeholder="Ex: 1500">
+    <label>De onde veio</label>
+    <input type="text" id="entrada-origem" placeholder="Ex: Cliente João, venda Mary Kay...">
+    <label>Categoria</label>
+    <select id="entrada-categoria"></select>
+    <label>Data</label>
+    <input type="date" id="entrada-data">
+    <button id="salvar-entrada">Salvar entrada</button>
+  </div>
+</div>
+
+<!-- MODAL: nova saída -->
+<div class="overlay hidden" id="overlay-saida">
+  <div class="modal">
+    <div class="modal-fechar" data-fechar="overlay-saida">Fechar ✕</div>
+    <h2 id="titulo-saida">Nova conta / saída</h2>
+    <label>Descrição</label>
+    <input type="text" id="saida-descricao" placeholder="Ex: Cartão Nubank">
+    <label>Categoria</label>
+    <select id="saida-categoria">
+      <option value="Moradia">Moradia (aluguel, condomínio)</option>
+      <option value="Contas de casa">Contas de casa (luz, água, internet, gás)</option>
+      <option value="Mercado">Mercado / Alimentação</option>
+      <option value="Transporte">Transporte</option>
+      <option value="Saúde">Saúde</option>
+      <option value="Educação">Educação</option>
+      <option value="Entretenimento">Entretenimento / Lazer</option>
+      <option value="Vestuário">Vestuário</option>
+      <option value="Assinaturas">Assinaturas (streaming, apps)</option>
+      <option value="Cartão/Dívida">Cartão de crédito / Dívida</option>
+      <option value="Outro">Outro</option>
+    </select>
+    <label>Valor total (R$)</label>
+    <input type="number" step="0.01" id="saida-valor" placeholder="Ex: 1500">
+    <label>Tipo</label>
+    <select id="saida-tipo">
+      <option value="avulsa">Avulsa (única)</option>
+      <option value="diaria">Diária (repete todo dia)</option>
+      <option value="semanal">Semanal (repete toda semana)</option>
+      <option value="quinzenal">Quinzenal (repete a cada 15 dias)</option>
+      <option value="mensal">Mensal (repete todo mês)</option>
+      <option value="anual">Anual (repete todo ano)</option>
+    </select>
+    <label>Vencimento</label>
+    <input type="date" id="saida-vencimento">
+    <label style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+      <input type="checkbox" id="saida-ja-paguei" style="width:auto;">
+      ✅ Já paguei na hora
+    </label>
+    <button id="salvar-saida">Salvar conta</button>
+  </div>
+</div>
+
+<!-- MODAL: guardar/resgatar dinheiro -->
+<div class="overlay hidden" id="overlay-reserva">
+  <div class="modal">
+    <div class="modal-fechar" data-fechar="overlay-reserva">Fechar ✕</div>
+    <h2>Guardar ou resgatar dinheiro</h2>
+    <label>O que você quer fazer</label>
+    <select id="reserva-tipo">
+      <option value="guardado">📦 Guardar (separei esse valor)</option>
+      <option value="resgatado">💸 Resgatar (tirei da caixinha)</option>
+    </select>
+    <label>Valor (R$)</label>
+    <input type="number" step="0.01" id="reserva-valor" placeholder="Ex: 1000">
+    <label>Descrição (opcional)</label>
+    <input type="text" id="reserva-descricao" placeholder="Ex: Reserva de emergência">
+    <button id="salvar-reserva">Salvar</button>
+  </div>
+</div>
+
+<!-- MODAL: novo investimento -->
+<div class="overlay hidden" id="overlay-investimento">
+  <div class="modal">
+    <div class="modal-fechar" data-fechar="overlay-investimento">Fechar ✕</div>
+    <h2>Novo investimento (aporte)</h2>
+    <label>Descrição</label>
+    <input type="text" id="investimento-descricao" placeholder="Ex: Tesouro Selic, CDB Nubank...">
+    <label>Categoria</label>
+    <select id="investimento-categoria">
+      <option value="Renda Fixa">Renda Fixa (CDB, Tesouro, Poupança)</option>
+      <option value="Ações">Ações</option>
+      <option value="Fundos Imobiliários">Fundos Imobiliários (FIIs)</option>
+      <option value="Fundos de Investimento">Fundos de Investimento</option>
+      <option value="Criptomoedas">Criptomoedas</option>
+      <option value="Previdência Privada">Previdência Privada</option>
+      <option value="Outro">Outro</option>
+    </select>
+    <label>Valor aportado (R$)</label>
+    <input type="number" step="0.01" id="investimento-valor" placeholder="Ex: 500">
+    <label>Data</label>
+    <input type="date" id="investimento-data">
+    <button id="salvar-investimento">Salvar</button>
+  </div>
+</div>
+
+<!-- MODAL: nova conta a receber -->
+<div class="overlay hidden" id="overlay-receber">
+  <div class="modal">
+    <div class="modal-fechar" data-fechar="overlay-receber">Fechar ✕</div>
+    <h2 id="titulo-receber">Alguém me deve</h2>
+    <label>Quem te deve</label>
+    <input type="text" id="receber-nome" placeholder="Ex: Cliente do site X">
+    <label>Valor total (R$)</label>
+    <input type="number" step="0.01" id="receber-valor" placeholder="Ex: 800">
+    <label>Referente a</label>
+    <input type="text" id="receber-descricao" placeholder="Ex: Sinal do site">
+    <label>Data combinada / previsão</label>
+    <input type="date" id="receber-data">
+    <div id="receber-editar-recebido-wrap" class="hidden">
+      <label>Já recebido (R$) <span style="color:var(--muted); font-weight:normal;">— corrige aqui se registrou errado</span></label>
+      <input type="number" step="0.01" id="receber-valor-recebido">
+    </div>
+    <button id="salvar-receber">Salvar</button>
+  </div>
+</div>
+
+<!-- MODAL: registrar recebimento -->
+<div class="overlay hidden" id="overlay-recebimento">
+  <div class="modal">
+    <div class="modal-fechar" data-fechar="overlay-recebimento">Fechar ✕</div>
+    <h2>Registrar recebimento</h2>
+    <p style="color:var(--muted); font-size:13px; margin-bottom:10px;" id="recebimento-info"></p>
+    <label>Valor recebido agora (R$)</label>
+    <input type="number" step="0.01" id="recebimento-valor" placeholder="Pode ser parcial">
+    <button id="quitar-recebimento-tudo" class="secondary" style="margin-top:10px;">✅ Recebi tudo (quitar)</button>
+    <button id="salvar-recebimento">Confirmar recebimento</button>
+  </div>
+</div>
+
+<!-- MODAL: histórico de pagamentos -->
+<div class="overlay hidden" id="overlay-historico">
+  <div class="modal">
+    <div class="modal-fechar" data-fechar="overlay-historico">Fechar ✕</div>
+    <h2 id="historico-titulo">Histórico</h2>
+    <p style="color:var(--muted); font-size:13px; margin-bottom:14px;" id="historico-resumo" class="valor-sensivel"></p>
+    <div id="historico-lista"></div>
+  </div>
+</div>
+
+<!-- MODAL: registrar pagamento -->
+<div class="overlay hidden" id="overlay-pagamento">
+  <div class="modal">
+    <div class="modal-fechar" data-fechar="overlay-pagamento">Fechar ✕</div>
+    <h2>Registrar pagamento</h2>
+    <p style="color:var(--muted); font-size:13px; margin-bottom:10px;" id="pagamento-info"></p>
+    <label>Valor pago agora (R$)</label>
+    <input type="number" step="0.01" id="pagamento-valor" placeholder="Pode ser parcial">
+    <button id="salvar-pagamento">Confirmar pagamento</button>
+    <button id="pagar-tudo" class="secondary" style="margin-top:10px;">✅ Pagar tudo (quitar)</button>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+  import {
+    getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut
+  } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+  import {
+    getFirestore, collection, addDoc, onSnapshot, query, orderBy, where,
+    doc, updateDoc, serverTimestamp, deleteDoc, getDoc, setDoc, arrayUnion
+  } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyB-VfSvJfR8AwVpE0OFpKzSQLffGrujTDk",
+    authDomain: "controle-financeiro-seguro.firebaseapp.com",
+    projectId: "controle-financeiro-seguro",
+    storageBucket: "controle-financeiro-seguro.firebasestorage.app",
+    messagingSenderId: "50177628041",
+    appId: "1:50177628041:web:e90121e9e9f85fd71b7358"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  const entradasRef = collection(db, "entradas");
+  const saidasRef = collection(db, "saidas");
+  const receberRef = collection(db, "a_receber");
+  const pagamentosRef = collection(db, "pagamentos");
+  const recebimentosRef = collection(db, "recebimentos");
+  const reservasRef = collection(db, "reservas");
+  const investimentosRef = collection(db, "investimentos");
+  const usuariosRef = collection(db, "usuarios");
+  let uidAtual = null;
+  let planoAtual = "base";
+  let saldoInicialAtual = 0;
+  let categoriasEntradaAtual = ["Salário", "Freelance", "Vendas", "Outro"];
+
+  // ---------- CATEGORIAS DE ENTRADA (personalizáveis por usuário) ----------
+  function renderizarCategoriasEntrada(selecionarValor) {
+    const select = document.getElementById("entrada-categoria");
+    let lista = [...categoriasEntradaAtual];
+    if (selecionarValor && !lista.includes(selecionarValor)) lista.unshift(selecionarValor);
+    select.innerHTML = lista.map(c => `<option value="${c}">${c}</option>`).join("")
+      + `<option value="__nova__">➕ Criar nova categoria...</option>`;
+    if (selecionarValor) select.value = selecionarValor;
   }
-}
 
-window.toggleServico = function(id){
-  if(modo === 'essencial'){
-    if(servicosSelecionados.includes(id)){
-      servicosSelecionados = servicosSelecionados.filter(x=>x!==id);
-    } else if(servicosSelecionados.length < 2){
-      servicosSelecionados.push(id);
-    } else {
-      alert('No Plano Essencial dá pra combinar até 2 serviços de uma vez. Pra mais que isso, o Plano Completo permite combinar quantos quiser.');
+  document.getElementById("entrada-categoria").addEventListener("change", async (e) => {
+    if (e.target.value !== "__nova__") return;
+    const nome = (window.prompt("Nome da nova categoria (ex: Mary Kay, Comissões, Aluguel de imóvel...)") || "").trim();
+    if (!nome) {
+      renderizarCategoriasEntrada(categoriasEntradaAtual[0]);
       return;
     }
-  } else {
-    if(servicosSelecionados.includes(id)) servicosSelecionados = servicosSelecionados.filter(x=>x!==id);
-    else servicosSelecionados.push(id);
-  }
-  profSelecionada = null;
-  horarioSelecionado = null;
-  renderServicoList();
-  document.getElementById('confirmBox').innerHTML = '';
-  document.getElementById('sucessoBox').innerHTML = '';
-
-  if(!servicosSelecionados.length){
-    document.getElementById('diaHorarioCard').style.display = 'none';
-    document.getElementById('profCard').style.display = 'none';
-    return;
-  }
-
-  const capazes = profissionaisCapazes();
-  if(capazes.length === 0){
-    document.getElementById('profCard').style.display = 'none';
-    document.getElementById('diaHorarioCard').style.display = 'none';
-    document.getElementById('confirmBox').innerHTML = `
-      <div class="card">
-        <p class="muted">Nenhuma profissional faz todos esses serviços combinados numa reserva só. Tenta escolher um grupo menor (ex: só os que a mesma pessoa faz), ou agende esses serviços em visitas separadas.</p>
-      </div>
-    `;
-    return;
-  }
-  if(capazes.length > 1){
-    document.getElementById('profCard').style.display = 'block';
-    renderProfList();
-    document.getElementById('diaHorarioCard').style.display = 'none';
-    return;
-  } else if(capazes.length === 1){
-    profSelecionada = capazes[0].id;
-  }
-  document.getElementById('profCard').style.display = 'none';
-  document.getElementById('diaHorarioCard').style.display = 'block';
-  renderDias();
-  renderSlots();
-};
-
-function renderProfList(){
-  const capazes = profissionaisCapazes();
-  const box = document.getElementById('profList');
-  let html = capazes.map(p => `
-    <div class="prof-item ${profSelecionada===p.id?'selected':''}" onclick="selecionarProf('${p.id}')">
-      <span class="nome">${p.nome}</span>
-    </div>
-  `).join('');
-  html += `
-    <div class="prof-item ${profSelecionada==='qualquer'?'selected':''}" onclick="selecionarProf('qualquer')">
-      <span class="nome">Sem preferência</span>
-    </div>`;
-  box.innerHTML = html;
-}
-
-window.selecionarProf = function(id){
-  profSelecionada = id;
-  renderProfList();
-  document.getElementById('diaHorarioCard').style.display = 'block';
-  horarioSelecionado = null;
-  renderDias();
-  renderSlots();
-};
-
-function renderDias(){
-  const box = document.getElementById('diasRow');
-  box.innerHTML = DIAS.map((d,i) => `
-    <div class="dia-chip ${i===diaSelecionado?'selected':''} ${DIA_FECHADO[i]?'fechado':''}" onclick="${DIA_FECHADO[i]?'':`selecionarDia(${i})`}">
-      <div class="dow">${d.dow}</div>
-      <div class="num">${d.num}</div>
-    </div>
-  `).join('');
-}
-
-window.selecionarDia = function(i){
-  diaSelecionado = i;
-  horarioSelecionado = null;
-  renderDias();
-  renderSlots();
-  document.getElementById('confirmBox').innerHTML = '';
-  document.getElementById('sucessoBox').innerHTML = '';
-};
-
-function profissionalDisponivelNoDia(prof, dia){
-  if(DIA_FECHADO[dia]) return false;
-  if(prof.diasIndisponiveis.includes(dia)) return false;
-  return true;
-}
-
-function intervaloLivre(dia, inicio, fim, profId){
-  if(fim > HORA_FIM) return false;
-  if(HORARIO_ALMOCO.ativo && inicio < HORARIO_ALMOCO.fim && fim > HORARIO_ALMOCO.inicio) return false;
-  return !agenda[dia].some(b => b.profId === profId && inicio < b.fim && fim > b.inicio);
-}
-
-function renderSlots(){
-  if(!servicosSelecionados.length) return;
-  const somaTempo = servicosSelecionados.reduce((t,id)=> t + SERVICOS.find(x=>x.id===id).duracao, 0);
-  const duracao = somaTempo + MARGEM_SEGURANCA;
-  const box = document.getElementById('slotsGrid');
-
-  let profsParaChecar = [];
-  if(profSelecionada === 'qualquer'){
-    profsParaChecar = profissionaisCapazes();
-  } else if(profSelecionada){
-    const p = PROFISSIONAIS.find(x => x.id === profSelecionada);
-    if(p) profsParaChecar = [p];
-  } else {
-    profsParaChecar = profissionaisCapazes();
-  }
-
-  if(DIA_FECHADO[diaSelecionado] || !profsParaChecar.some(p => profissionalDisponivelNoDia(p, diaSelecionado))){
-    box.innerHTML = `<p class="muted" style="grid-column:1/-1">Nenhuma profissional disponível nesse dia.</p>`;
-    return;
-  }
-
-  const opcoes = [];
-  for(let t = HORA_INICIO; t + duracao <= HORA_FIM; t += GRANULARIDADE){
-    opcoes.push(t);
-  }
-
-  if(!opcoes.length){
-    box.innerHTML = `<p class="muted" style="grid-column:1/-1">Esse combo de serviços (${formatarDuracao(duracao)}) é mais longo do que o salão funciona num dia só. Tenta escolher menos serviços juntos, ou combine com o salão um horário especial.</p>`;
-    return;
-  }
-
-  box.innerHTML = opcoes.map(t => {
-    const profLivre = profsParaChecar.find(p => profissionalDisponivelNoDia(p, diaSelecionado) && intervaloLivre(diaSelecionado, t, t+duracao, p.id));
-    const livre = !!profLivre;
-    let classe = livre ? 'livre' : 'ocupado';
-    if(livre && t === horarioSelecionado) classe = 'selecionado';
-    return `<div class="slot ${classe}" onclick="${livre ? `selecionarHorario(${t},'${profLivre.id}')` : ''}">${minutosParaHora(t)}</div>`;
-  }).join('');
-}
-
-let profDoHorarioEscolhido = null;
-
-window.selecionarHorario = function(t, profId){
-  horarioSelecionado = t;
-  profDoHorarioEscolhido = profId;
-  renderSlots();
-  const somaTempo = servicosSelecionados.reduce((t2,id)=> t2 + SERVICOS.find(x=>x.id===id).duracao, 0);
-  const duracao = somaTempo + MARGEM_SEGURANCA;
-  const nomes = servicosSelecionados.map(id => SERVICOS.find(s=>s.id===id).nome).join(' + ');
-  const somaPreco = servicosSelecionados.reduce((t2,id)=> t2 + SERVICOS.find(x=>x.id===id).preco, 0);
-  const profNome = PROFISSIONAIS.find(p=>p.id===profId)?.nome || '';
-
-  document.getElementById('confirmBox').innerHTML = `
-    <div class="card confirm-box">
-      <h2>Confirmar ${nomes} — ${minutosParaHora(t)}</h2>
-      <p class="muted">${profNome ? `Com ${profNome} · ` : ''}Até ${minutosParaHora(t + duracao)} (já com margem de segurança)</p>
-      <div class="total-bar" style="margin-top:0;margin-bottom:14px">
-        <span>Valor total</span><b>${MOEDA} ${somaPreco.toFixed(2).replace('.',',')}</b>
-      </div>
-      <p class="muted" style="margin-bottom:6px">💳 ${textoFormasPagamento()}</p>
-      ${modo==='completo' && LEMBRETE_ATIVO ? '<p class="muted" style="margin-bottom:12px">🔔 Você recebe um lembrete por WhatsApp 3h antes</p>' : ''}
-      <input type="text" id="nomeClienteInput" placeholder="Seu nome completo">
-      <p class="muted" style="margin-top:6px;margin-bottom:12px;font-size:12px">Digite nome e sobrenome, pra não confundir com outra cliente</p>
-      <input type="tel" id="telefoneClienteInput" maxlength="20" placeholder="${modo==='completo' ? 'WhatsApp (obrigatório para o lembrete)' : 'WhatsApp (opcional)'}">
-      <p class="muted" style="margin-top:4px;font-size:11px">Ex: +55 47 99999-9999 (Brasil) ou +351 912 345 678 (Portugal)</p>
-      <button class="primary" id="confirmarBtn">Confirmar agendamento</button>
-    </div>
-  `;
-  document.getElementById('confirmarBtn').onclick = confirmarAgendamento;
-
-  const telInput = document.getElementById('telefoneClienteInput');
-  telInput.addEventListener('input', () => {
-    telInput.value = telInput.value.replace(/[^0-9()\-\s+]/g, '').slice(0, 20);
-  });
-};
-
-function confirmarAgendamento(){
-  const nome = document.getElementById('nomeClienteInput').value.trim();
-  const telefone = document.getElementById('telefoneClienteInput').value.trim();
-  if(!nome){ alert('Digita seu nome pra confirmar!'); return; }
-  if(modo === 'completo' && LEMBRETE_ATIVO && !telefone){
-    alert('Pra receber o lembrete por WhatsApp, preciso do seu número. Preenche esse campo!');
-    return;
-  }
-  const somaTempo = servicosSelecionados.reduce((t,id)=> t + SERVICOS.find(x=>x.id===id).duracao, 0);
-  const duracao = somaTempo + MARGEM_SEGURANCA;
-  const nomes = servicosSelecionados.map(id => SERVICOS.find(s=>s.id===id).nome).join(' + ');
-  const somaPreco = servicosSelecionados.reduce((t,id)=> t + SERVICOS.find(x=>x.id===id).preco, 0);
-  const bookingId = 'b' + Date.now();
-
-  const booking = {
-    id: bookingId,
-    inicio: horarioSelecionado,
-    fim: horarioSelecionado + duracao,
-    cliente: nome,
-    telefone: telefone,
-    servicoNomes: nomes,
-    preco: somaPreco,
-    profId: profDoHorarioEscolhido
-  };
-  agenda[diaSelecionado].push(booking);
-  meusAgendamentos.push({ ...booking, dia: diaSelecionado });
-
-  avisos.unshift({
-    texto: `Novo agendamento: ${nome} — ${nomes} às ${minutosParaHora(horarioSelecionado)} (${DIAS[diaSelecionado].dow} dia ${DIAS[diaSelecionado].num})`,
-    hora: new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})
+    if (!categoriasEntradaAtual.includes(nome)) {
+      categoriasEntradaAtual.push(nome);
+      await setDoc(doc(db, "usuarios", uidAtual), { categoriasEntrada: arrayUnion(nome) }, { merge: true });
+    }
+    renderizarCategoriasEntrada(nome);
   });
 
-  document.getElementById('confirmBox').innerHTML = '';
-  document.getElementById('sucessoBox').innerHTML = `
-    <div class="sucesso">
-      <div class="check-big">✅</div>
-      <h2>Agendado!</h2>
-      <p class="muted">${nome}, ${nomes} às ${minutosParaHora(horarioSelecionado)} — ${DIAS[diaSelecionado].dow} dia ${DIAS[diaSelecionado].num}</p>
-      <p class="muted">Total: ${MOEDA} ${somaPreco.toFixed(2).replace('.',',')} · pagamento no dia</p>
-      ${modo==='completo' ? '<p class="muted">Você pode cancelar em "Meus agendamentos" quando quiser.</p>' : ''}
-    </div>
-  `;
-  servicosSelecionados = [];
-  profSelecionada = null;
-  horarioSelecionado = null;
-  renderServicoList();
-  document.getElementById('diaHorarioCard').style.display = 'none';
-  document.getElementById('profCard').style.display = 'none';
-  renderMeusAgendamentos();
-  renderPainel();
-}
-
-function renderMeusAgendamentos(){
-  const box = document.getElementById('meusAgendamentosList');
-  if(!meusAgendamentos.length){
-    box.innerHTML = '<div class="empty">Você ainda não tem agendamentos.</div>';
-    return;
+  // ---------- PLANO DO USUÁRIO (base / economista) ----------
+  async function carregarUsuario() {
+    const refUsuario = doc(db, "usuarios", uidAtual);
+    const snap = await getDoc(refUsuario);
+    if (!snap.exists()) {
+      await setDoc(refUsuario, { plano: "base", saldoInicial: 0, categoriasEntrada: categoriasEntradaAtual });
+      planoAtual = "base";
+      saldoInicialAtual = 0;
+      aplicarPlano();
+      abrir("overlay-boasvindas");
+    } else {
+      const d = snap.data();
+      planoAtual = d.plano || "base";
+      saldoInicialAtual = d.saldoInicial || 0;
+      if (d.categoriasEntrada && d.categoriasEntrada.length) categoriasEntradaAtual = d.categoriasEntrada;
+      aplicarPlano();
+      aplicarBannerRenovacao(d);
+    }
+    renderizarCategoriasEntrada();
   }
-  box.innerHTML = meusAgendamentos.map(b => `
-    <div class="row">
-      <span>${b.servicoNomes}<br><span class="svc">${DIAS[b.dia].dow} dia ${DIAS[b.dia].num} · ${minutosParaHora(b.inicio)}</span></span>
-      <button class="danger" onclick="cancelarAgendamento('${b.id}', ${b.dia})">Cancelar</button>
-    </div>
-  `).join('');
-}
 
-window.cancelarAgendamento = function(id, dia){
-  agenda[dia] = agenda[dia].filter(b => b.id !== id);
-  meusAgendamentos = meusAgendamentos.filter(b => b.id !== id);
-  renderMeusAgendamentos();
-  renderSlots();
-  renderPainel();
-};
-
-function renderPainel(){
-  document.getElementById('moedaSelect').value = MOEDA;
-  document.getElementById('margemInput').value = minutosParaHora(MARGEM_SEGURANCA);
-  document.getElementById('lembreteAtivo').checked = LEMBRETE_ATIVO;
-  document.getElementById('almocoAtivo').checked = HORARIO_ALMOCO.ativo;
-  document.getElementById('almocoInicio').value = minutosParaHora(HORARIO_ALMOCO.inicio);
-  document.getElementById('almocoFim').value = minutosParaHora(HORARIO_ALMOCO.fim);
-
-  const pagBox = document.getElementById('pagamentoOpcoes');
-  pagBox.innerHTML = Object.keys(LABELS_PAGAMENTO).map(k => `
-    <label style="display:flex;align-items:center;gap:8px;padding:8px 0;font-size:14px;cursor:pointer">
-      <input type="checkbox" ${FORMAS_PAGAMENTO[k]?'checked':''} onchange="togglePagamento('${k}')">
-      ${LABELS_PAGAMENTO[k]}
-    </label>
-  `).join('');
-
-  const configBox = document.getElementById('servicoConfigList');
-  configBox.innerHTML = SERVICOS.map(s => `
-    <div class="servico-config">
-      <span class="nome">${s.nome}</span>
-      <div style="display:flex;align-items:center;gap:6px">
-        <select onchange="alterarDuracao('${s.id}', this.value)">
-          ${[15,30,45,60,90,120,150,180].map(min => `<option value="${min}" ${min===s.duracao?'selected':''}>${min} min</option>`).join('')}
-        </select>
-        <input type="number" step="0.01" value="${s.preco}" style="width:80px;padding:6px 8px;border-radius:6px;border:1px solid var(--line);font-size:13px" onchange="alterarPreco('${s.id}', this.value)">
-        <button class="del-btn" onclick="removerServico('${s.id}')" title="Remover serviço">🗑</button>
-      </div>
-    </div>
-  `).join('');
-
-  const profBox = document.getElementById('profissionaisConfigList');
-  profBox.innerHTML = PROFISSIONAIS.map(p => `
-    <div class="prof-config">
-      <div class="top-row">
-        <span class="nome">${p.nome}</span>
-        <button class="del-btn" onclick="removerProfissional('${p.id}')" title="Remover">🗑</button>
-      </div>
-      <div class="muted" style="font-size:11px;margin-bottom:4px">Serviços que ela faz:</div>
-      ${SERVICOS.map(s => `<span class="chip-toggle ${p.servicos.includes(s.id)?'on':''}" onclick="toggleProfServico('${p.id}','${s.id}')">${s.nome}</span>`).join('')}
-      <div class="muted" style="font-size:11px;margin:8px 0 4px">Dias que ela NÃO trabalha:</div>
-      ${DIAS.map((d,i) => `<span class="chip-toggle off-day ${p.diasIndisponiveis.includes(i)?'on':''}" onclick="toggleProfDia('${p.id}',${i})">${d.dow}</span>`).join('')}
-    </div>
-  `).join('');
-
-  const diasFechadoBox = document.getElementById('diasFechadoConfig');
-  diasFechadoBox.innerHTML = DIAS.map((d,i) => `
-    <div class="dia-chip ${DIA_FECHADO[i]?'selected':''}" onclick="toggleDiaFechado(${i})" style="cursor:pointer">
-      <div class="dow">${d.dow}</div>
-      <div class="num">${DIA_FECHADO[i]?'Fechado':'Aberto'}</div>
-    </div>
-  `).join('');
-
-  const diasBox = document.getElementById('diasRowPainel');
-  diasBox.innerHTML = DIAS.map((d,i) => `
-    <div class="dia-chip ${i===diaSelecionado?'selected':''}" onclick="selecionarDiaPainel(${i})">
-      <div class="dow">${d.dow}</div>
-      <div class="num">${d.num}</div>
-    </div>
-  `).join('');
-
-  const lista = document.getElementById('agendamentosList');
-  const dia = agenda[diaSelecionado].slice().sort((a,b) => a.inicio - b.inicio);
-  lista.innerHTML = dia.length ? dia.map(b => `
-    <div class="row">
-      <span>${b.cliente}${b.telefone ? ' · '+b.telefone : ''}<br><span class="svc">${b.servicoNomes}${b.profId ? ' · '+(PROFISSIONAIS.find(p=>p.id===b.profId)?.nome||'') : ''}</span></span>
-      <span class="muted">${minutosParaHora(b.inicio)} – ${minutosParaHora(b.fim)}<br>${MOEDA} ${(b.preco||0).toFixed(2).replace('.',',')}</span>
-    </div>
-  `).join('') : `<div class="empty">Nenhum agendamento ainda em ${DIAS[diaSelecionado].dow} dia ${DIAS[diaSelecionado].num}.</div>`;
-
-  // faturamento total (soma tudo que já foi agendado, todos os dias)
-  let totalFaturamento = 0, totalQtd = 0;
-  Object.values(agenda).forEach(lista => lista.forEach(b => { totalFaturamento += (b.preco||0); totalQtd++; }));
-  document.getElementById('faturamentoValor').textContent = MOEDA + ' ' + totalFaturamento.toFixed(2).replace('.',',');
-  document.getElementById('faturamentoQtd').textContent = totalQtd + ' agendamento' + (totalQtd===1?'':'s');
-}
-
-window.selecionarDiaPainel = function(i){
-  diaSelecionado = i;
-  renderPainel();
-};
-
-window.alterarDuracao = function(id, novoValor){
-  const s = SERVICOS.find(x => x.id === id);
-  s.duracao = parseInt(novoValor);
-  renderPainel();
-  renderServicoList();
-};
-
-window.alterarPreco = function(id, novoValor){
-  const s = SERVICOS.find(x => x.id === id);
-  s.preco = parseFloat(novoValor) || 0;
-  renderPainel();
-  renderServicoList();
-};
-
-window.removerServico = function(id){
-  SERVICOS = SERVICOS.filter(s => s.id !== id);
-  servicosSelecionados = servicosSelecionados.filter(x => x !== id);
-  PROFISSIONAIS.forEach(p => { p.servicos = p.servicos.filter(x => x !== id); });
-  renderPainel();
-  renderServicoList();
-};
-
-window.togglePagamento = function(k){
-  FORMAS_PAGAMENTO[k] = !FORMAS_PAGAMENTO[k];
-};
-
-window.toggleProfServico = function(profId, svcId){
-  const p = PROFISSIONAIS.find(x => x.id === profId);
-  if(p.servicos.includes(svcId)) p.servicos = p.servicos.filter(x => x !== svcId);
-  else p.servicos.push(svcId);
-  renderPainel();
-};
-
-window.toggleProfDia = function(profId, diaIdx){
-  const p = PROFISSIONAIS.find(x => x.id === profId);
-  if(p.diasIndisponiveis.includes(diaIdx)) p.diasIndisponiveis = p.diasIndisponiveis.filter(x => x !== diaIdx);
-  else p.diasIndisponiveis.push(diaIdx);
-  renderPainel();
-};
-
-window.removerProfissional = function(id){
-  if(PROFISSIONAIS.length <= 1){ alert('Precisa ter ao menos uma profissional.'); return; }
-  PROFISSIONAIS = PROFISSIONAIS.filter(p => p.id !== id);
-  renderPainel();
-};
-
-document.getElementById('addProfBtn').onclick = () => {
-  const nomeInput = document.getElementById('novoProfNome');
-  const nome = nomeInput.value.trim();
-  if(!nome) return;
-  if(modo === 'essencial' && PROFISSIONAIS.length >= 2){
-    alert('No Plano Essencial dá pra ter até 2 profissionais. Pra mais que isso, é só migrar pro Plano Completo.');
-    return;
+  function aplicarBannerRenovacao(dadosUsuario) {
+    const banner = document.getElementById("banner-renovacao");
+    const texto = document.getElementById("texto-renovacao");
+    if (dadosUsuario.renovacaoPendente && dadosUsuario.bloqueioApos) {
+      const dias = Math.max(0, Math.ceil((dadosUsuario.bloqueioApos - Date.now()) / (1000 * 60 * 60 * 24)));
+      texto.textContent = `Não conseguimos confirmar seu último pagamento. Você tem ${dias} dia(s) para renovar antes do acesso ser bloqueado.`;
+      banner.classList.remove("hidden");
+    } else {
+      banner.classList.add("hidden");
+    }
   }
-  PROFISSIONAIS.push({ id:'pr'+Date.now(), nome, servicos: [], diasIndisponiveis: [] });
-  nomeInput.value = '';
-  renderPainel();
-};
 
-window.toggleDiaFechado = function(i){
-  DIA_FECHADO[i] = !DIA_FECHADO[i];
-  renderPainel();
-  renderDias();
-};
+  function aplicarPlano() {
+    const navEconomista = document.getElementById("tab-nav-economista");
+    if (planoAtual === "economista") {
+      navEconomista.classList.remove("hidden");
+      document.getElementById("economista-saldo-inicial").value = saldoInicialAtual || "";
+    } else {
+      navEconomista.classList.add("hidden");
+    }
+  }
 
-document.getElementById('addServicoBtn').onclick = () => {
-  const nomeInput = document.getElementById('novoServicoNome');
-  const nome = nomeInput.value.trim();
-  if(!nome) return;
-  const duracao = parseInt(document.getElementById('novoServicoDuracao').value);
-  const preco = parseFloat(document.getElementById('novoServicoPreco').value) || 0;
-  const id = nome.toLowerCase().replace(/[^a-z0-9]+/g,'-') + '-' + Date.now();
-  SERVICOS.push({ id, nome, duracao, preco });
-  nomeInput.value = '';
-  document.getElementById('novoServicoPreco').value = '';
-  renderPainel();
-  renderServicoList();
-};
+  document.getElementById("salvar-saldo-inicial").addEventListener("click", async () => {
+    const valor = parseFloat(document.getElementById("economista-saldo-inicial").value) || 0;
+    saldoInicialAtual = valor;
+    await setDoc(doc(db, "usuarios", uidAtual), { saldoInicial: valor }, { merge: true });
+    atualizarModoEconomista();
+  });
 
-document.getElementById('margemInput').onchange = (e) => {
-  MARGEM_SEGURANCA = Math.max(0, horaParaMinutos(e.target.value));
-  renderServicoList();
-};
+  document.getElementById("fechar-boasvindas").addEventListener("click", () => fechar("overlay-boasvindas"));
 
-document.getElementById('moedaSelect').onchange = (e) => {
-  MOEDA = e.target.value;
-  alert('Trocou a moeda! Lembre-se: isso não converte os valores — ajuste cada preço manualmente na lista de serviços, usando os valores certos pra essa moeda.');
-  renderPainel();
-  renderServicoList();
-};
+  // ---------- LOGIN ----------
+  const loginScreen = document.getElementById("login-screen");
+  const appScreen = document.getElementById("app-screen");
+  const fabAdd = document.getElementById("fab-add");
+  const loginError = document.getElementById("login-error");
 
-document.getElementById('lembreteAtivo').onchange = (e) => {
-  LEMBRETE_ATIVO = e.target.checked;
-};
+  document.getElementById("login-btn").addEventListener("click", async () => {
+    const email = document.getElementById("login-email").value.trim();
+    const senha = document.getElementById("login-password").value;
+    loginError.textContent = "";
+    if (!email || !senha) { loginError.textContent = "Preencha e-mail e senha."; return; }
+    try {
+      await signInWithEmailAndPassword(auth, email, senha);
+    } catch (erro) {
+      if (erro.code === "auth/user-disabled") {
+        loginError.textContent = "Sua assinatura está vencida. Renove seu plano para voltar a usar o sistema.";
+      } else if (erro.code === "auth/invalid-credential" || erro.code === "auth/wrong-password" || erro.code === "auth/user-not-found") {
+        loginError.textContent = "E-mail ou senha incorretos.";
+      } else {
+        // Erro diferente do normal (rede, muitas tentativas, hora do aparelho errada, etc.)
+        // Mostra o código pra ajudar a identificar a causa real.
+        loginError.textContent = `Não foi possível entrar. Tenta de novo em alguns segundos. (código: ${erro.code || "desconhecido"})`;
+      }
+      console.error("Erro de login:", erro);
+    }
+  });
 
-document.getElementById('almocoAtivo').onchange = (e) => {
-  HORARIO_ALMOCO.ativo = e.target.checked;
-  renderSlots();
-};
+  document.getElementById("logout-btn").addEventListener("click", () => signOut(auth));
 
-function horaParaMinutos(str){
-  const [h,m] = str.split(':').map(Number);
-  return (h||0)*60 + (m||0);
-}
+  // ---------- MOSTRAR/ESCONDER SENHA NO LOGIN ----------
+  document.getElementById("toggle-senha").addEventListener("click", () => {
+    const campo = document.getElementById("login-password");
+    const btn = document.getElementById("toggle-senha");
+    if (campo.type === "password") {
+      campo.type = "text";
+      btn.textContent = "🙈";
+    } else {
+      campo.type = "password";
+      btn.textContent = "👁️";
+    }
+  });
 
-document.getElementById('almocoInicio').onchange = (e) => {
-  HORARIO_ALMOCO.inicio = horaParaMinutos(e.target.value);
-  renderSlots();
-};
-document.getElementById('almocoFim').onchange = (e) => {
-  HORARIO_ALMOCO.fim = horaParaMinutos(e.target.value);
-  renderSlots();
-};
+  // ---------- MODO PRIVADO (esconder valores na tela) ----------
+  const btnPrivacidade = document.getElementById("privacidade-btn");
+  function aplicarModoPrivado(ativo) {
+    document.body.classList.toggle("modo-privado", ativo);
+    btnPrivacidade.classList.toggle("ativo", ativo);
+    btnPrivacidade.textContent = ativo ? "🙈" : "👁️";
+    btnPrivacidade.title = ativo ? "Mostrar valores" : "Esconder valores";
+    localStorage.setItem("grana-viva-modo-privado", ativo ? "1" : "0");
+  }
+  btnPrivacidade.addEventListener("click", () => {
+    aplicarModoPrivado(!document.body.classList.contains("modo-privado"));
+  });
+  aplicarModoPrivado(localStorage.getItem("grana-viva-modo-privado") === "1");
 
-document.querySelectorAll('.tab').forEach(tab => {
-  tab.onclick = () => {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    tab.classList.add('active');
-    document.getElementById(tab.dataset.screen).classList.add('active');
-    if(tab.dataset.screen === 'painel') renderPainel();
-    if(tab.dataset.screen === 'agendamentos') renderMeusAgendamentos();
-  };
-});
+  onAuthStateChanged(auth, (usuario) => {
+    if (usuario) {
+      uidAtual = usuario.uid;
+      loginScreen.classList.add("hidden");
+      appScreen.classList.remove("hidden");
+      fabAdd.classList.remove("hidden");
+      carregarUsuario();
+      carregarEntradas();
+      carregarSaidas();
+      carregarReceber();
+      carregarReservas();
+      carregarInvestimentos();
+    } else {
+      appScreen.classList.add("hidden");
+      loginScreen.classList.remove("hidden");
+      fabAdd.classList.add("hidden");
+    }
+  });
 
-renderServicoList();
-renderPainel();
-renderMeusAgendamentos();
+  // ---------- ABAS ----------
+  document.querySelectorAll(".tab").forEach(tab => {
+    tab.addEventListener("click", () => {
+      document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+      tab.classList.add("active");
+      document.getElementById("tab-" + tab.dataset.tab).classList.add("active");
+    });
+  });
 
+  // ---------- MODAIS ----------
+  function abrir(id) { document.getElementById(id).classList.remove("hidden"); }
+  function fechar(id) { document.getElementById(id).classList.add("hidden"); }
+
+  document.querySelectorAll("[data-fechar]").forEach(el => {
+    el.addEventListener("click", () => fechar(el.dataset.fechar));
+  });
+
+  fabAdd.addEventListener("click", () => abrir("overlay-escolha"));
+
+  document.getElementById("btn-nova-entrada").addEventListener("click", () => {
+    fechar("overlay-escolha");
+    editandoEntradaId = null;
+    document.getElementById("titulo-entrada").textContent = "Nova entrada";
+    document.getElementById("salvar-entrada").textContent = "Salvar entrada";
+    document.getElementById("entrada-valor").value = "";
+    document.getElementById("entrada-origem").value = "";
+    document.getElementById("entrada-data").value = new Date().toISOString().slice(0,10);
+    renderizarCategoriasEntrada(categoriasEntradaAtual[0]);
+    abrir("overlay-entrada");
+  });
+
+  document.getElementById("btn-nova-saida").addEventListener("click", () => {
+    fechar("overlay-escolha");
+    editandoSaidaId = null;
+    document.getElementById("titulo-saida").textContent = "Nova conta / saída";
+    document.getElementById("salvar-saida").textContent = "Salvar conta";
+    document.getElementById("saida-descricao").value = "";
+    document.getElementById("saida-categoria").value = "Mercado";
+    document.getElementById("saida-valor").value = "";
+    document.getElementById("saida-vencimento").value = "";
+    document.getElementById("saida-ja-paguei").checked = false;
+    abrir("overlay-saida");
+  });
+
+  document.getElementById("btn-novo-receber").addEventListener("click", () => {
+    fechar("overlay-escolha");
+    editandoReceberId = null;
+    document.getElementById("titulo-receber").textContent = "Alguém me deve";
+    document.getElementById("salvar-receber").textContent = "Salvar";
+    document.getElementById("receber-nome").value = "";
+    document.getElementById("receber-valor").value = "";
+    document.getElementById("receber-descricao").value = "";
+    document.getElementById("receber-data").value = new Date().toISOString().slice(0,10);
+    document.getElementById("receber-editar-recebido-wrap").classList.add("hidden");
+    abrir("overlay-receber");
+  });
+
+  document.getElementById("btn-guardar").addEventListener("click", () => {
+    fechar("overlay-escolha");
+    abrir("overlay-reserva");
+  });
+
+  document.getElementById("btn-novo-investimento").addEventListener("click", () => {
+    fechar("overlay-escolha");
+    document.getElementById("investimento-descricao").value = "";
+    document.getElementById("investimento-valor").value = "";
+    document.getElementById("investimento-data").value = new Date().toISOString().slice(0,10);
+    abrir("overlay-investimento");
+  });
+
+  document.getElementById("salvar-reserva").addEventListener("click", async () => {
+    const tipo = document.getElementById("reserva-tipo").value;
+    const valor = parseFloat(document.getElementById("reserva-valor").value);
+    const descricao = document.getElementById("reserva-descricao").value.trim();
+
+    if (!valor || valor <= 0) { alert("Coloca um valor válido."); return; }
+
+    await addDoc(reservasRef, {
+      ownerId: uidAtual,
+      tipo, valor, descricao,
+      data: new Date().toISOString().slice(0,10),
+      criadoEm: serverTimestamp()
+    });
+
+    document.getElementById("reserva-valor").value = "";
+    document.getElementById("reserva-descricao").value = "";
+    document.getElementById("reserva-tipo").value = "guardado";
+    fechar("overlay-reserva");
+  });
+
+  document.getElementById("salvar-investimento").addEventListener("click", async () => {
+    const descricao = document.getElementById("investimento-descricao").value.trim();
+    const categoria = document.getElementById("investimento-categoria").value;
+    const valor = parseFloat(document.getElementById("investimento-valor").value);
+    const data = document.getElementById("investimento-data").value;
+
+    if (!valor || valor <= 0) { alert("Coloca um valor válido."); return; }
+
+    await addDoc(investimentosRef, {
+      ownerId: uidAtual,
+      descricao, categoria, valor, data,
+      criadoEm: serverTimestamp()
+    });
+
+    document.getElementById("investimento-descricao").value = "";
+    document.getElementById("investimento-valor").value = "";
+    fechar("overlay-investimento");
+  });
+
+  // ---------- EDIÇÃO (controle de qual item está sendo editado) ----------
+  let editandoEntradaId = null;
+  let editandoSaidaId = null;
+  let editandoReceberId = null;
+
+  // ---------- SALVAR ENTRADA ----------
+  document.getElementById("salvar-entrada").addEventListener("click", async () => {
+    const valor = parseFloat(document.getElementById("entrada-valor").value);
+    const origem = document.getElementById("entrada-origem").value.trim();
+    const categoria = document.getElementById("entrada-categoria").value;
+    const data = document.getElementById("entrada-data").value;
+
+    if (!valor || valor <= 0) { alert("Coloca um valor válido."); return; }
+
+    if (editandoEntradaId) {
+      await updateDoc(doc(db, "entradas", editandoEntradaId), { valor, origem, categoria, data });
+      editandoEntradaId = null;
+    } else {
+      await addDoc(entradasRef, {
+      ownerId: uidAtual,
+        valor, origem, categoria, data,
+        criadoEm: serverTimestamp()
+      });
+    }
+
+    document.getElementById("entrada-valor").value = "";
+    document.getElementById("entrada-origem").value = "";
+    document.getElementById("titulo-entrada").textContent = "Nova entrada";
+    document.getElementById("salvar-entrada").textContent = "Salvar entrada";
+    fechar("overlay-entrada");
+  });
+
+  // ---------- SALVAR SAÍDA ----------
+  document.getElementById("salvar-saida").addEventListener("click", async () => {
+    const descricao = document.getElementById("saida-descricao").value.trim();
+    const categoria = document.getElementById("saida-categoria").value;
+    const valorTotal = parseFloat(document.getElementById("saida-valor").value);
+    const tipo = document.getElementById("saida-tipo").value;
+    const vencimento = document.getElementById("saida-vencimento").value;
+    const jaPaguei = document.getElementById("saida-ja-paguei").checked;
+
+    if (!descricao || !valorTotal || valorTotal <= 0) { alert("Preencha descrição e valor."); return; }
+
+    if (editandoSaidaId) {
+      await updateDoc(doc(db, "saidas", editandoSaidaId), { descricao, categoria, valorTotal, tipo, vencimento });
+      editandoSaidaId = null;
+    } else {
+      await addDoc(saidasRef, {
+      ownerId: uidAtual,
+        descricao, categoria, valorTotal, tipo, vencimento,
+        valorPago: jaPaguei ? valorTotal : 0,
+        status: jaPaguei ? "quitada" : "pendente",
+        criadoEm: serverTimestamp()
+      });
+    }
+
+    document.getElementById("saida-descricao").value = "";
+    document.getElementById("saida-valor").value = "";
+    document.getElementById("saida-ja-paguei").checked = false;
+    document.getElementById("titulo-saida").textContent = "Nova conta / saída";
+    document.getElementById("salvar-saida").textContent = "Salvar conta";
+    fechar("overlay-saida");
+  });
+
+  // ---------- SALVAR A RECEBER ----------
+  document.getElementById("salvar-receber").addEventListener("click", async () => {
+    const nome = document.getElementById("receber-nome").value.trim();
+    const valorTotal = parseFloat(document.getElementById("receber-valor").value);
+    const descricao = document.getElementById("receber-descricao").value.trim();
+    const data = document.getElementById("receber-data").value;
+
+    if (!nome || !valorTotal || valorTotal <= 0) { alert("Preencha nome e valor."); return; }
+
+    if (editandoReceberId) {
+      const valorRecebido = parseFloat(document.getElementById("receber-valor-recebido").value) || 0;
+      const status = valorRecebido >= valorTotal ? "quitada" : (valorRecebido > 0 ? "parcial" : "pendente");
+      await updateDoc(doc(db, "a_receber", editandoReceberId), { nome, valorTotal, descricao, data, valorRecebido, status });
+      editandoReceberId = null;
+    } else {
+      await addDoc(receberRef, {
+      ownerId: uidAtual,
+        nome, valorTotal, descricao, data,
+        valorRecebido: 0,
+        status: "pendente",
+        criadoEm: serverTimestamp()
+      });
+    }
+
+    document.getElementById("receber-nome").value = "";
+    document.getElementById("receber-valor").value = "";
+    document.getElementById("receber-descricao").value = "";
+    document.getElementById("titulo-receber").textContent = "Alguém me deve";
+    document.getElementById("salvar-receber").textContent = "Salvar";
+    fechar("overlay-receber");
+  });
+
+  // ---------- FILTRO DE MÊS ----------
+  let filtroMesAtual = new Date().toISOString().slice(0, 7); // YYYY-MM
+  let verTodosMeses = false;
+
+  function estaNoMesFiltrado(dataStr) {
+    if (verTodosMeses) return true;
+    if (!dataStr) return true;
+    return dataStr.slice(0, 7) === filtroMesAtual;
+  }
+
+  const nomesMeses = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+  const selectMes = document.getElementById("filtro-mes-select");
+  document.getElementById("btn-info-saldo").addEventListener("click", () => {
+    document.getElementById("info-saldo-texto").classList.toggle("hidden");
+  });
+  const selectAno = document.getElementById("filtro-ano-select");
+
+  nomesMeses.forEach((nome, i) => {
+    const opt = document.createElement("option");
+    opt.value = String(i + 1).padStart(2, "0");
+    opt.textContent = nome;
+    selectMes.appendChild(opt);
+  });
+
+  const anoAtualFiltro = new Date().getFullYear();
+  for (let a = anoAtualFiltro - 5; a <= anoAtualFiltro + 3; a++) {
+    const opt = document.createElement("option");
+    opt.value = a;
+    opt.textContent = a;
+    selectAno.appendChild(opt);
+  }
+
+  selectMes.value = filtroMesAtual.slice(5, 7);
+  selectAno.value = filtroMesAtual.slice(0, 4);
+
+  function atualizarFiltroMesEAno() {
+    filtroMesAtual = `${selectAno.value}-${selectMes.value}`;
+    renderizarEntradas();
+    renderizarSaidas();
+    renderizarReceber();
+  }
+
+  selectMes.addEventListener("change", atualizarFiltroMesEAno);
+  selectAno.addEventListener("change", atualizarFiltroMesEAno);
+
+  document.getElementById("ver-todos-meses").addEventListener("change", (e) => {
+    verTodosMeses = e.target.checked;
+    selectMes.disabled = verTodosMeses;
+    selectAno.disabled = verTodosMeses;
+    renderizarEntradas();
+    renderizarSaidas();
+    renderizarReceber();
+  });
+
+  // ---------- LISTAR ENTRADAS ----------
+  let entradasCache = [];
+  function carregarEntradas() {
+    const q = query(entradasRef, where("ownerId", "==", uidAtual), orderBy("criadoEm", "desc"));
+    onSnapshot(q, (snap) => {
+      entradasCache = [];
+      snap.forEach(docSnap => entradasCache.push({ id: docSnap.id, ...docSnap.data() }));
+      renderizarEntradas();
+      atualizarPainel();
+    });
+  }
+
+  function renderizarEntradas() {
+    const lista = document.getElementById("lista-entradas");
+    const itens = entradasCache.filter(d => estaNoMesFiltrado(d.data));
+    if (itens.length === 0) {
+      lista.innerHTML = '<div class="vazio">Nenhuma entrada neste período</div>';
+    } else {
+      lista.innerHTML = "";
+      itens.forEach(d => {
+        const id = d.id;
+        lista.innerHTML += `
+          <div class="card">
+            <div class="card-topo">
+              <div>
+                <div class="card-titulo">${d.origem || "Sem descrição"}</div>
+                <div class="card-categoria">${d.categoria || ""} ${d.data ? "· " + formatarData(d.data) : ""}</div>
+              </div>
+              <div class="card-valor entrada valor-sensivel">+ ${formatarMoeda(d.valor)}</div>
+            </div>
+            <div class="card-acoes">
+              <button class="small secondary" data-editar-entrada="${id}">Editar</button>
+            </div>
+          </div>`;
+      });
+
+      document.querySelectorAll("[data-editar-entrada]").forEach(btn => {
+        btn.addEventListener("click", () => abrirEdicaoEntrada(btn.dataset.editarEntrada));
+      });
+    }
+  }
+
+  // ---------- LISTAR SAÍDAS ----------
+  let saidasCache = [];
+  function carregarSaidas() {
+    const q = query(saidasRef, where("ownerId", "==", uidAtual), orderBy("criadoEm", "desc"));
+    onSnapshot(q, (snap) => {
+      saidasCache = [];
+      snap.forEach(docSnap => saidasCache.push({ id: docSnap.id, ...docSnap.data() }));
+      renderizarSaidas();
+      atualizarPainel();
+    });
+  }
+
+  function renderizarSaidas() {
+    const lista = document.getElementById("lista-saidas");
+    // pendente/parcial ficam sempre visíveis (independente do mês); só as quitadas entram no filtro
+    const itens = saidasCache.filter(d => d.status !== "quitada" || estaNoMesFiltrado(d.vencimento));
+
+    // Contas vencendo/vencidas sobem pro topo automaticamente; quitadas ficam por último
+    itens.sort((a, b) => {
+      const prioridade = (item) => item.status === "quitada" ? 2 : (item.vencimento ? 0 : 1);
+      const pa = prioridade(a), pb = prioridade(b);
+      if (pa !== pb) return pa - pb;
+      if (a.vencimento && b.vencimento) return a.vencimento.localeCompare(b.vencimento);
+      return 0;
+    });
+    if (itens.length === 0) {
+      lista.innerHTML = '<div class="vazio">Nenhuma conta neste período</div>';
+    } else {
+      lista.innerHTML = "";
+      itens.forEach(d => {
+        const id = d.id;
+        const restante = d.valorTotal - (d.valorPago || 0);
+        const statusClasse = d.status === "quitada" ? "quitada" : (d.status === "parcial" ? "parcial" : "pendente");
+        const statusTexto = d.status === "quitada" ? "Quitada ✅" : (d.status === "parcial" ? "Parcial" : "Pendente");
+
+        lista.innerHTML += `
+          <div class="card">
+            <div class="card-topo">
+              <div>
+                <div class="card-titulo">${d.descricao}</div>
+                <div class="card-categoria">${d.categoria ? d.categoria + " · " : ""}${rotuloTipo(d.tipo)} ${d.vencimento ? "· vence " + formatarData(d.vencimento) : ""}</div>
+              </div>
+              <div>
+                <div class="card-valor valor-sensivel">${formatarMoeda(d.valorTotal)}</div>
+                <span class="badge ${statusClasse}">${statusTexto}</span>
+              </div>
+            </div>
+            ${d.status !== "quitada" ? `
+              <div class="card-progresso valor-sensivel">Pago: ${formatarMoeda(d.valorPago || 0)} · Falta: ${formatarMoeda(restante)}</div>
+              <div class="card-acoes">
+                <button class="small" data-pagar="${id}">Registrar pagamento</button>
+                <button class="small secondary" data-historico="${id}">Ver histórico</button>
+                <button class="small secondary" data-editar-saida="${id}">Editar</button>
+                <button class="small secondary" data-excluir-saida="${id}">🗑️ Excluir</button>
+              </div>
+            ` : `<div class="card-progresso valor-sensivel">Pago em ${formatarMoeda(d.valorPago)}</div>
+              <div class="card-acoes">
+                <button class="small secondary" data-historico="${id}">Ver histórico</button>
+                <button class="small secondary" data-editar-saida="${id}">Editar</button>
+                <button class="small secondary" data-excluir-saida="${id}">🗑️ Excluir</button>
+              </div>`}
+          </div>`;
+      });
+
+      document.querySelectorAll("[data-pagar]").forEach(btn => {
+        btn.addEventListener("click", () => abrirPagamento(btn.dataset.pagar));
+      });
+      document.querySelectorAll("[data-historico]").forEach(btn => {
+        btn.addEventListener("click", () => abrirHistorico(btn.dataset.historico));
+      });
+      document.querySelectorAll("[data-editar-saida]").forEach(btn => {
+        btn.addEventListener("click", () => abrirEdicaoSaida(btn.dataset.editarSaida));
+      });
+      document.querySelectorAll("[data-excluir-saida]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          if (confirm("Excluir essa conta? Essa ação não pode ser desfeita.")) {
+            await deleteDoc(doc(db, "saidas", btn.dataset.excluirSaida));
+          }
+        });
+      });
+    }
+  }
+
+  // ---------- LISTAR A RECEBER ----------
+  let receberCache = [];
+  function carregarReceber() {
+    const q = query(receberRef, where("ownerId", "==", uidAtual), orderBy("criadoEm", "desc"));
+    onSnapshot(q, (snap) => {
+      receberCache = [];
+      snap.forEach(docSnap => receberCache.push({ id: docSnap.id, ...docSnap.data() }));
+      renderizarReceber();
+      atualizarPainel();
+    });
+  }
+
+  function renderizarReceber() {
+    const lista = document.getElementById("lista-receber");
+    // pendente/parcial ficam sempre visíveis (independente do mês); só os já recebidos entram no filtro
+    const itens = receberCache.filter(d => d.status !== "quitada" || estaNoMesFiltrado(d.data));
+    if (itens.length === 0) {
+      lista.innerHTML = '<div class="vazio">Ninguém te deve nada neste período</div>';
+    } else {
+      lista.innerHTML = "";
+      itens.forEach(d => {
+        const id = d.id;
+        const restante = d.valorTotal - (d.valorRecebido || 0);
+        const statusClasse = d.status === "quitada" ? "quitada" : (d.status === "parcial" ? "parcial" : "pendente");
+        const statusTexto = d.status === "quitada" ? "Recebido ✅" : (d.status === "parcial" ? "Parcial" : "Pendente");
+
+        lista.innerHTML += `
+          <div class="card">
+            <div class="card-topo">
+              <div>
+                <div class="card-titulo">${d.nome}</div>
+                <div class="card-categoria">${d.descricao || ""} ${d.data ? "· " + formatarData(d.data) : ""}</div>
+              </div>
+              <div>
+                <div class="card-valor entrada valor-sensivel">${formatarMoeda(d.valorTotal)}</div>
+                <span class="badge ${statusClasse}">${statusTexto}</span>
+              </div>
+            </div>
+            ${d.status !== "quitada" ? `
+              <div class="card-progresso valor-sensivel">Recebido: ${formatarMoeda(d.valorRecebido || 0)} · Falta: ${formatarMoeda(restante)}</div>
+              <div class="card-acoes">
+                <button class="small" data-receber="${id}">Registrar recebimento</button>
+                <button class="small secondary" data-historico-receber="${id}">Ver histórico</button>
+                <button class="small secondary" data-editar-receber="${id}">Editar</button>
+                <button class="small secondary" data-excluir-receber="${id}">🗑️ Excluir</button>
+              </div>
+            ` : `<div class="card-progresso">Recebido totalmente</div>
+              <div class="card-acoes">
+                <button class="small secondary" data-historico-receber="${id}">Ver histórico</button>
+                <button class="small secondary" data-editar-receber="${id}">Editar</button>
+                <button class="small secondary" data-excluir-receber="${id}">🗑️ Excluir</button>
+              </div>`}
+          </div>`;
+      });
+
+      document.querySelectorAll("[data-receber]").forEach(btn => {
+        btn.addEventListener("click", () => abrirRecebimento(btn.dataset.receber));
+      });
+      document.querySelectorAll("[data-historico-receber]").forEach(btn => {
+        btn.addEventListener("click", () => abrirHistoricoReceber(btn.dataset.historicoReceber));
+      });
+      document.querySelectorAll("[data-editar-receber]").forEach(btn => {
+        btn.addEventListener("click", () => abrirEdicaoReceber(btn.dataset.editarReceber));
+      });
+      document.querySelectorAll("[data-excluir-receber]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          if (confirm("Excluir esse registro de 'A Receber'? Essa ação não pode ser desfeita.")) {
+            await deleteDoc(doc(db, "a_receber", btn.dataset.excluirReceber));
+          }
+        });
+      });
+    }
+  }
+
+  // ---------- ABRIR EDIÇÃO ----------
+  function abrirEdicaoEntrada(id) {
+    const item = entradasCache.find(e => e.id === id);
+    if (!item) return;
+    editandoEntradaId = id;
+    document.getElementById("entrada-valor").value = item.valor;
+    document.getElementById("entrada-origem").value = item.origem || "";
+    renderizarCategoriasEntrada(item.categoria || categoriasEntradaAtual[0]);
+    document.getElementById("entrada-data").value = item.data || "";
+    document.getElementById("titulo-entrada").textContent = "Editar entrada";
+    document.getElementById("salvar-entrada").textContent = "Salvar alterações";
+    abrir("overlay-entrada");
+  }
+
+  function abrirEdicaoSaida(id) {
+    const item = saidasCache.find(s => s.id === id);
+    if (!item) return;
+    editandoSaidaId = id;
+    document.getElementById("saida-descricao").value = item.descricao || "";
+    document.getElementById("saida-categoria").value = item.categoria || "Mercado";
+    document.getElementById("saida-valor").value = item.valorTotal;
+    document.getElementById("saida-tipo").value = item.tipo || "avulsa";
+    document.getElementById("saida-vencimento").value = item.vencimento || "";
+    document.getElementById("titulo-saida").textContent = "Editar conta";
+    document.getElementById("salvar-saida").textContent = "Salvar alterações";
+    abrir("overlay-saida");
+  }
+
+  function abrirEdicaoReceber(id) {
+    const item = receberCache.find(r => r.id === id);
+    if (!item) return;
+    editandoReceberId = id;
+    document.getElementById("receber-nome").value = item.nome || "";
+    document.getElementById("receber-valor").value = item.valorTotal;
+    document.getElementById("receber-descricao").value = item.descricao || "";
+    document.getElementById("receber-data").value = item.data || "";
+    document.getElementById("receber-valor-recebido").value = item.valorRecebido || 0;
+    document.getElementById("receber-editar-recebido-wrap").classList.remove("hidden");
+    document.getElementById("titulo-receber").textContent = "Editar";
+    document.getElementById("salvar-receber").textContent = "Salvar alterações";
+    abrir("overlay-receber");
+  }
+
+  let receberSelecionadoId = null;
+  function abrirRecebimento(id) {
+    const item = receberCache.find(r => r.id === id);
+    if (!item) return;
+    receberSelecionadoId = id;
+    const restante = item.valorTotal - (item.valorRecebido || 0);
+    document.getElementById("recebimento-info").textContent =
+      `${item.nome} — falta receber ${formatarMoeda(restante)}`;
+    document.getElementById("recebimento-valor").value = "";
+    abrir("overlay-recebimento");
+  }
+
+  document.getElementById("salvar-recebimento").addEventListener("click", async () => {
+    const valorAgora = parseFloat(document.getElementById("recebimento-valor").value);
+    if (!valorAgora || valorAgora <= 0) { alert("Coloca um valor válido."); return; }
+    await confirmarRecebimento(valorAgora);
+  });
+
+  document.getElementById("quitar-recebimento-tudo").addEventListener("click", async () => {
+    const item = receberCache.find(r => r.id === receberSelecionadoId);
+    if (!item) return;
+    const restante = item.valorTotal - (item.valorRecebido || 0);
+    await confirmarRecebimento(restante);
+  });
+
+  async function confirmarRecebimento(valorAgora) {
+    const item = receberCache.find(r => r.id === receberSelecionadoId);
+    if (!item) return;
+
+    const novoValorRecebido = (item.valorRecebido || 0) + valorAgora;
+    let novoStatus = "parcial";
+    if (novoValorRecebido >= item.valorTotal) novoStatus = "quitada";
+
+    await updateDoc(doc(db, "a_receber", receberSelecionadoId), {
+      valorRecebido: novoValorRecebido,
+      status: novoStatus
+    });
+
+    // Guarda esse recebimento individual no histórico (igual já faz com pagamento de conta)
+    await addDoc(recebimentosRef, {
+      ownerId: uidAtual,
+      receberId: receberSelecionadoId,
+      nome: item.nome,
+      valor: valorAgora,
+      data: new Date().toISOString().slice(0,10),
+      criadoEm: serverTimestamp()
+    });
+
+    // Cria a entrada automaticamente, já que o dinheiro caiu de verdade
+    await addDoc(entradasRef, {
+      ownerId: uidAtual,
+      valor: valorAgora,
+      origem: item.nome,
+      categoria: "Recebimento - " + (item.descricao || "A receber"),
+      data: new Date().toISOString().slice(0,10),
+      criadoEm: serverTimestamp()
+    });
+
+    fechar("overlay-recebimento");
+  }
+
+  // ---------- REGISTRAR PAGAMENTO ----------
+  let saidaSelecionadaId = null;
+
+  // soma 1 mês numa data "AAAA-MM-DD", ajustando o dia se o mês seguinte for mais curto
+  function somarUmMes(dataStr) {
+    const [ano, mes, dia] = dataStr.split("-").map(Number);
+    let novoMes = mes + 1;
+    let novoAno = ano;
+    if (novoMes > 12) { novoMes = 1; novoAno++; }
+    const ultimoDiaDoMes = new Date(novoAno, novoMes, 0).getDate();
+    const novoDia = Math.min(dia, ultimoDiaDoMes);
+    return `${novoAno}-${String(novoMes).padStart(2, "0")}-${String(novoDia).padStart(2, "0")}`;
+  }
+
+  function somarDias(dataStr, dias) {
+    const [ano, mes, dia] = dataStr.split("-").map(Number);
+    const data = new Date(ano, mes - 1, dia);
+    data.setDate(data.getDate() + dias);
+    return `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, "0")}-${String(data.getDate()).padStart(2, "0")}`;
+  }
+
+  function somarUmAno(dataStr) {
+    const [ano, mes, dia] = dataStr.split("-").map(Number);
+    return `${ano + 1}-${String(mes).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
+  }
+
+  function avancarVencimento(dataStr, tipo) {
+    switch (tipo) {
+      case "diaria": return somarDias(dataStr, 1);
+      case "semanal": return somarDias(dataStr, 7);
+      case "quinzenal": return somarDias(dataStr, 15);
+      case "mensal": case "fixa": return somarUmMes(dataStr); // "fixa" = compatibilidade com contas antigas
+      case "anual": return somarUmAno(dataStr);
+      default: return dataStr; // avulsa não recorre
+    }
+  }
+
+  function abrirPagamento(id) {
+    const saida = saidasCache.find(s => s.id === id);
+    if (!saida) return;
+    saidaSelecionadaId = id;
+    const restante = saida.valorTotal - (saida.valorPago || 0);
+    document.getElementById("pagamento-info").textContent =
+      `${saida.descricao} — falta pagar ${formatarMoeda(restante)}`;
+    document.getElementById("pagamento-valor").value = "";
+    abrir("overlay-pagamento");
+  }
+
+  async function confirmarPagamento(valorPagoAgora) {
+    if (!valorPagoAgora || valorPagoAgora <= 0) { alert("Coloca um valor válido."); return; }
+
+    const saida = saidasCache.find(s => s.id === saidaSelecionadaId);
+    if (!saida) return;
+
+    const novoValorPago = (saida.valorPago || 0) + valorPagoAgora;
+    const ehRecorrente = saida.tipo && saida.tipo !== "avulsa";
+    const totalmentePaga = novoValorPago >= saida.valorTotal;
+
+    let dadosAtualizados;
+    if (totalmentePaga) {
+      // valor total da conta/dívida foi quitado por completo: encerra, sem gerar próxima fatura
+      dadosAtualizados = { valorPago: novoValorPago, status: "quitada" };
+    } else {
+      // pagamento parcial: registra o valor pago e, se for recorrente (ex: parcela de empréstimo,
+      // mensalidade), já empurra o vencimento pra próxima fatura, pra não ficar "vencida" à toa
+      dadosAtualizados = { valorPago: novoValorPago, status: "parcial" };
+      if (ehRecorrente && saida.vencimento) {
+        dadosAtualizados.vencimento = avancarVencimento(saida.vencimento, saida.tipo);
+      }
+    }
+
+    await updateDoc(doc(db, "saidas", saidaSelecionadaId), dadosAtualizados);
+
+    // Guarda esse pagamento individual no histórico (sem precisar de mês/período)
+    await addDoc(pagamentosRef, {
+      ownerId: uidAtual,
+      saidaId: saidaSelecionadaId,
+      descricao: saida.descricao,
+      valor: valorPagoAgora,
+      data: new Date().toISOString().slice(0,10),
+      criadoEm: serverTimestamp()
+    });
+
+    fechar("overlay-pagamento");
+  }
+
+  document.getElementById("salvar-pagamento").addEventListener("click", async () => {
+    const valorPagoAgora = parseFloat(document.getElementById("pagamento-valor").value);
+    await confirmarPagamento(valorPagoAgora);
+  });
+
+  document.getElementById("pagar-tudo").addEventListener("click", async () => {
+    const saida = saidasCache.find(s => s.id === saidaSelecionadaId);
+    if (!saida) return;
+    const restante = saida.valorTotal - (saida.valorPago || 0);
+    await confirmarPagamento(restante);
+  });
+
+  // ---------- HISTÓRICO DE PAGAMENTOS ----------
+  let pagamentosCache = [];
+  onSnapshot(query(pagamentosRef, where("ownerId", "==", uidAtual), orderBy("criadoEm", "desc")), (snap) => {
+    pagamentosCache = [];
+    snap.forEach(docSnap => pagamentosCache.push(docSnap.data()));
+    if (typeof atualizarGraficoAnual === "function") atualizarGraficoAnual();
+    if (typeof atualizarModoEconomista === "function") atualizarModoEconomista();
+  });
+
+  function abrirHistorico(saidaId) {
+    const saida = saidasCache.find(s => s.id === saidaId);
+    if (!saida) return;
+
+    document.getElementById("historico-titulo").textContent = saida.descricao;
+    document.getElementById("historico-resumo").textContent =
+      `Total: ${formatarMoeda(saida.valorTotal)} · Já pago: ${formatarMoeda(saida.valorPago || 0)} · Falta: ${formatarMoeda(Math.max(0, saida.valorTotal - (saida.valorPago || 0)))}`;
+
+    const pagamentosDaConta = pagamentosCache.filter(p => p.saidaId === saidaId);
+    const listaEl = document.getElementById("historico-lista");
+
+    if (pagamentosDaConta.length === 0) {
+      listaEl.innerHTML = '<div class="vazio">Nenhum pagamento registrado ainda</div>';
+    } else {
+      listaEl.innerHTML = pagamentosDaConta.map(p => `
+        <div class="card" style="margin-bottom:8px;">
+          <div class="card-topo" style="margin-bottom:0;">
+            <div class="card-categoria">${formatarData(p.data)}</div>
+            <div class="card-valor valor-sensivel">${formatarMoeda(p.valor)}</div>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    abrir("overlay-historico");
+  }
+
+  // ---------- HISTÓRICO DE RECEBIMENTOS ----------
+  let recebimentosCache = [];
+  onSnapshot(query(recebimentosRef, where("ownerId", "==", uidAtual), orderBy("criadoEm", "desc")), (snap) => {
+    recebimentosCache = [];
+    snap.forEach(docSnap => recebimentosCache.push(docSnap.data()));
+  });
+
+  function abrirHistoricoReceber(receberId) {
+    const item = receberCache.find(r => r.id === receberId);
+    if (!item) return;
+
+    document.getElementById("historico-titulo").textContent = item.nome;
+    document.getElementById("historico-resumo").textContent =
+      `Total: ${formatarMoeda(item.valorTotal)} · Já recebido: ${formatarMoeda(item.valorRecebido || 0)} · Falta: ${formatarMoeda(Math.max(0, item.valorTotal - (item.valorRecebido || 0)))}`;
+
+    const recebimentosDoItem = recebimentosCache.filter(r => r.receberId === receberId);
+    const listaEl = document.getElementById("historico-lista");
+
+    if (recebimentosDoItem.length === 0) {
+      listaEl.innerHTML = '<div class="vazio">Nenhum recebimento registrado ainda</div>';
+    } else {
+      listaEl.innerHTML = recebimentosDoItem.map(r => `
+        <div class="card" style="margin-bottom:8px;">
+          <div class="card-topo" style="margin-bottom:0;">
+            <div class="card-categoria">${formatarData(r.data)}</div>
+            <div class="card-valor entrada valor-sensivel">${formatarMoeda(r.valor)}</div>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    abrir("overlay-historico");
+  }
+
+  // ---------- PAINEL ----------
+  let reservasCache = [];
+  function carregarReservas() {
+    onSnapshot(query(reservasRef, where("ownerId", "==", uidAtual), orderBy("criadoEm", "desc")), (snap) => {
+      reservasCache = [];
+      snap.forEach(docSnap => reservasCache.push(docSnap.data()));
+      atualizarPainel();
+    });
+  }
+
+  // ---------- INVESTIMENTOS ----------
+  let investimentosCache = [];
+  function carregarInvestimentos() {
+    const q = query(investimentosRef, where("ownerId", "==", uidAtual), orderBy("criadoEm", "desc"));
+    onSnapshot(q, (snap) => {
+      investimentosCache = [];
+      const lista = document.getElementById("lista-investimentos");
+      if (snap.empty) {
+        lista.innerHTML = '<div class="vazio">Nenhum investimento lançado ainda</div>';
+      } else {
+        lista.innerHTML = "";
+        snap.forEach(docSnap => {
+          const d = docSnap.data();
+          const id = docSnap.id;
+          investimentosCache.push({ id, ...d });
+          lista.innerHTML += `
+            <div class="card">
+              <div class="card-topo">
+                <div>
+                  <div class="card-titulo">${d.descricao || "Sem descrição"}</div>
+                  <div class="card-categoria">${d.categoria || "Outro"} ${d.data ? "· " + formatarData(d.data) : ""}</div>
+                </div>
+                <div class="card-valor entrada valor-sensivel">+ ${formatarMoeda(d.valor)}</div>
+              </div>
+              <div class="card-acoes">
+                <button class="small secondary" data-excluir-investimento="${id}">🗑️ Excluir</button>
+              </div>
+            </div>`;
+        });
+
+        document.querySelectorAll("[data-excluir-investimento]").forEach(btn => {
+          btn.addEventListener("click", async () => {
+            if (confirm("Excluir esse investimento?")) {
+              await deleteDoc(doc(db, "investimentos", btn.dataset.excluirInvestimento));
+            }
+          });
+        });
+      }
+      atualizarTotalInvestido();
+      atualizarGraficosInvestimentos();
+    });
+  }
+
+  function atualizarTotalInvestido() {
+    const total = investimentosCache.reduce((s, i) => s + (i.valor || 0), 0);
+    document.getElementById("total-investido").textContent = formatarMoeda(total);
+  }
+
+  function atualizarPainel() {
+    const totalEntradas = entradasCache.reduce((s, e) => s + (e.valor || 0), 0);
+    const totalPago = saidasCache.reduce((s, sd) => s + (sd.valorPago || 0), 0);
+    const totalPendente = saidasCache.reduce((s, sd) => s + Math.max(0, (sd.valorTotal || 0) - (sd.valorPago || 0)), 0);
+    const totalAReceber = receberCache.reduce((s, r) => s + Math.max(0, (r.valorTotal || 0) - (r.valorRecebido || 0)), 0);
+    const totalGuardado = reservasCache.reduce((s, r) => s + (r.tipo === "guardado" ? r.valor : -r.valor), 0);
+    const saldo = totalEntradas - totalPago - totalGuardado;
+
+    document.getElementById("total-entradas").textContent = formatarMoeda(totalEntradas);
+    document.getElementById("total-pago").textContent = formatarMoeda(totalPago);
+    document.getElementById("total-pendente").textContent = formatarMoeda(totalPendente);
+    document.getElementById("total-a-receber").textContent = formatarMoeda(totalAReceber);
+    document.getElementById("total-guardado").textContent = formatarMoeda(totalGuardado);
+    document.getElementById("saldo-valor").textContent = formatarMoeda(saldo);
+
+    verificarVencimentos();
+    atualizarGraficos();
+    atualizarModoEconomista();
+  }
+
+  // ---------- MODO ECONOMISTA ----------
+  let cdiCache = null; // evita buscar de novo a cada atualização
+  let chartEconomistaEvolucao = null;
+  let chartEconomistaPoupanca = null;
+
+  async function buscarCDIMensal(dataInicial) {
+    const fmt = (d) => `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;
+    const hoje = new Date();
+    const url = `https://api.bcb.gov.br/dados/serie/bcdata.sgs.4391/dados?formato=json&dataInicial=${fmt(dataInicial)}&dataFinal=${fmt(hoje)}`;
+    try {
+      const resp = await fetch(url);
+      const dados = await resp.json();
+      const mapa = {};
+      dados.forEach(item => {
+        const [dia, mes, ano] = item.data.split("/");
+        mapa[`${ano}-${mes}`] = parseFloat(item.valor.replace(",", ".")) / 100;
+      });
+      return mapa;
+    } catch (e) {
+      console.error("Não foi possível buscar o CDI no Banco Central:", e);
+      return {};
+    }
+  }
+
+  function formatarMesLabel(mesStr) {
+    const [ano, mes] = mesStr.split("-").map(Number);
+    return `${mesesAbrev[mes - 1]}/${String(ano).slice(2)}`;
+  }
+
+  async function atualizarModoEconomista() {
+    if (planoAtual !== "economista") return;
+
+    const mesesSet = new Set();
+    entradasCache.forEach(e => { if (e.data) mesesSet.add(e.data.slice(0, 7)); });
+    pagamentosCache.forEach(p => { if (p.data) mesesSet.add(p.data.slice(0, 7)); });
+
+    const vazio = document.getElementById("economista-vazio");
+    const conteudo = document.getElementById("economista-conteudo");
+
+    if (mesesSet.size === 0) {
+      vazio.classList.remove("hidden");
+      conteudo.classList.add("hidden");
+      return;
+    }
+    vazio.classList.add("hidden");
+    conteudo.classList.remove("hidden");
+
+    const meses = Array.from(mesesSet).sort();
+    const [anoIni, mesIni] = meses[0].split("-").map(Number);
+    const dataInicial = new Date(anoIni, mesIni - 1, 1);
+
+    if (!cdiCache) cdiCache = await buscarCDIMensal(dataInicial);
+
+    let saldoReal = saldoInicialAtual;
+    let saldoCDI = saldoInicialAtual;
+    const labels = [];
+    const serieReal = [];
+    const serieCDI = [];
+    const serieTaxaPoupanca = [];
+
+    meses.forEach(mes => {
+      const totalEntradas = entradasCache
+        .filter(e => e.data && e.data.slice(0, 7) === mes)
+        .reduce((s, e) => s + (e.valor || 0), 0);
+      const totalPago = pagamentosCache
+        .filter(p => p.data && p.data.slice(0, 7) === mes)
+        .reduce((s, p) => s + (p.valor || 0), 0);
+      const sobra = totalEntradas - totalPago;
+      const taxaPoupanca = totalEntradas > 0 ? (sobra / totalEntradas) * 100 : 0;
+
+      saldoReal += sobra;
+
+      const taxaMes = cdiCache[mes] || 0;
+      saldoCDI = saldoCDI * (1 + taxaMes) + sobra;
+
+      labels.push(formatarMesLabel(mes));
+      serieReal.push(Math.round(saldoReal * 100) / 100);
+      serieCDI.push(Math.round(saldoCDI * 100) / 100);
+      serieTaxaPoupanca.push(Math.round(taxaPoupanca * 10) / 10);
+    });
+
+    document.getElementById("economista-taxa-atual").textContent = serieTaxaPoupanca[serieTaxaPoupanca.length - 1] + "%";
+    document.getElementById("economista-saldo-real").textContent = formatarMoeda(saldoReal);
+    document.getElementById("economista-saldo-cdi").textContent = formatarMoeda(saldoCDI);
+    document.getElementById("economista-diferenca").textContent = formatarMoeda(Math.max(0, saldoCDI - saldoReal));
+
+    const ctxEvolucao = document.getElementById("grafico-economista-evolucao");
+    if (chartEconomistaEvolucao) chartEconomistaEvolucao.destroy();
+    if (ctxEvolucao) {
+      chartEconomistaEvolucao = new Chart(ctxEvolucao, {
+        type: "line",
+        data: {
+          labels,
+          datasets: [
+            { label: "Saldo real", data: serieReal, borderColor: "#6c5ce7", backgroundColor: "rgba(108,92,231,0.15)", fill: true, tension: 0.3 },
+            { label: "Se rendesse no CDI", data: serieCDI, borderColor: "#2ecc71", backgroundColor: "rgba(46,204,113,0.1)", fill: true, tension: 0.3 }
+          ]
+        },
+        options: {
+          plugins: { legend: { labels: { color: "#eef0f4" } } },
+          scales: {
+            x: { ticks: { color: "#eef0f4" }, grid: { color: "#262b36" } },
+            y: { ticks: { color: "#eef0f4" }, grid: { color: "#262b36" } }
+          }
+        }
+      });
+    }
+
+    const ctxPoupanca = document.getElementById("grafico-economista-poupanca");
+    if (chartEconomistaPoupanca) chartEconomistaPoupanca.destroy();
+    if (ctxPoupanca) {
+      chartEconomistaPoupanca = new Chart(ctxPoupanca, {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [{ label: "Taxa de poupança (%)", data: serieTaxaPoupanca, backgroundColor: "#f1c40f" }]
+        },
+        options: {
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: "#eef0f4" }, grid: { color: "#262b36" } },
+            y: { ticks: { color: "#eef0f4" }, grid: { color: "#262b36" } }
+          }
+        }
+      });
+    }
+  }
+
+  // ---------- ALERTAS DE VENCIMENTO ----------
+  function verificarVencimentos() {
+    const hoje = new Date();
+    hoje.setHours(0,0,0,0);
+
+    const proximas = saidasCache
+      .filter(s => s.status !== "quitada" && s.vencimento)
+      .map(s => {
+        const venc = new Date(s.vencimento + "T00:00:00");
+        const dias = Math.round((venc - hoje) / (1000 * 60 * 60 * 24));
+        return { ...s, dias };
+      })
+      .filter(s => s.dias <= 5) // vencidas + vencendo em até 5 dias
+      .sort((a, b) => a.dias - b.dias);
+
+    const banner = document.getElementById("banner-alertas");
+    const lista = document.getElementById("lista-alertas");
+
+    if (proximas.length === 0) {
+      banner.classList.add("hidden");
+      return;
+    }
+
+    banner.classList.remove("hidden");
+    lista.innerHTML = proximas.map(s => {
+      let quando;
+      if (s.dias < 0) quando = `Venceu há ${Math.abs(s.dias)} dia(s)`;
+      else if (s.dias === 0) quando = "Vence hoje";
+      else if (s.dias === 1) quando = "Vence amanhã";
+      else quando = `Vence em ${s.dias} dias`;
+      return `<div class="item-alerta"><span>${s.descricao}</span><span class="quando">${quando}</span></div>`;
+    }).join("");
+  }
+
+  // ---------- GRÁFICOS ----------
+  let chartCategorias = null;
+  let chartGeral = null;
+  let chartEvolucaoInvest = null;
+  let chartCategoriasInvest = null;
+
+  function atualizarGraficosInvestimentos() {
+    if (typeof Chart === "undefined") return;
+
+    // Gráfico linha: evolução acumulada do patrimônio ao longo do tempo
+    const ordenados = [...investimentosCache]
+      .filter(i => i.data)
+      .sort((a, b) => a.data.localeCompare(b.data));
+    let acumulado = 0;
+    const labelsEvolucao = [];
+    const valoresEvolucao = [];
+    ordenados.forEach(i => {
+      acumulado += (i.valor || 0);
+      labelsEvolucao.push(formatarData(i.data));
+      valoresEvolucao.push(acumulado);
+    });
+
+    const ctxEvolucao = document.getElementById("grafico-evolucao-investimentos");
+    if (chartEvolucaoInvest) chartEvolucaoInvest.destroy();
+    if (ctxEvolucao && labelsEvolucao.length > 0) {
+      chartEvolucaoInvest = new Chart(ctxEvolucao, {
+        type: "line",
+        data: {
+          labels: labelsEvolucao,
+          datasets: [{
+            label: "Patrimônio acumulado",
+            data: valoresEvolucao,
+            borderColor: "#6c5ce7",
+            backgroundColor: "rgba(108,92,231,0.2)",
+            fill: true,
+            tension: 0.3
+          }]
+        },
+        options: {
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: "#eef0f4" }, grid: { color: "#262b36" } },
+            y: { ticks: { color: "#eef0f4" }, grid: { color: "#262b36" } }
+          }
+        }
+      });
+    }
+
+    // Gráfico pizza: distribuição por tipo de investimento
+    const porCategoria = {};
+    investimentosCache.forEach(i => {
+      const cat = i.categoria || "Outro";
+      porCategoria[cat] = (porCategoria[cat] || 0) + (i.valor || 0);
+    });
+    const catLabels = Object.keys(porCategoria);
+    const catValores = Object.values(porCategoria);
+
+    const ctxCatInvest = document.getElementById("grafico-categorias-investimentos");
+    if (chartCategoriasInvest) chartCategoriasInvest.destroy();
+    if (ctxCatInvest && catLabels.length > 0) {
+      chartCategoriasInvest = new Chart(ctxCatInvest, {
+        type: "pie",
+        data: {
+          labels: catLabels,
+          datasets: [{
+            data: catValores,
+            backgroundColor: ["#6c5ce7", "#2ecc71", "#f1c40f", "#e74c3c", "#3498db", "#e67e22", "#1abc9c"]
+          }]
+        },
+        options: {
+          plugins: { legend: { labels: { color: "#eef0f4", font: { size: 11 } } } }
+        }
+      });
+    }
+  }
+
+  function atualizarGraficos() {
+    if (typeof Chart === "undefined") return;
+
+    // Gráfico 1: entradas por categoria (pizza)
+    const porCategoria = {};
+    entradasCache.forEach(e => {
+      const cat = e.categoria || "Outro";
+      porCategoria[cat] = (porCategoria[cat] || 0) + (e.valor || 0);
+    });
+    const catLabels = Object.keys(porCategoria);
+    const catValores = Object.values(porCategoria);
+
+    const ctxCat = document.getElementById("grafico-categorias");
+    if (chartCategorias) chartCategorias.destroy();
+    if (ctxCat && catLabels.length > 0) {
+      chartCategorias = new Chart(ctxCat, {
+        type: "pie",
+        data: {
+          labels: catLabels,
+          datasets: [{
+            data: catValores,
+            backgroundColor: ["#6c5ce7", "#2ecc71", "#f1c40f", "#e74c3c", "#3498db", "#e67e22"]
+          }]
+        },
+        options: {
+          plugins: { legend: { labels: { color: "#eef0f4", font: { size: 11 } } } }
+        }
+      });
+    }
+
+    // Gráfico 2: visão geral (pago x pendente x a receber x guardado)
+    const totalPago = saidasCache.reduce((s, sd) => s + (sd.valorPago || 0), 0);
+    const totalPendente = saidasCache.reduce((s, sd) => s + Math.max(0, (sd.valorTotal || 0) - (sd.valorPago || 0)), 0);
+    const totalAReceber = receberCache.reduce((s, r) => s + Math.max(0, (r.valorTotal || 0) - (r.valorRecebido || 0)), 0);
+    const totalGuardado = reservasCache.reduce((s, r) => s + (r.tipo === "guardado" ? r.valor : -r.valor), 0);
+
+    const ctxGeral = document.getElementById("grafico-geral");
+    if (chartGeral) chartGeral.destroy();
+    if (ctxGeral) {
+      chartGeral = new Chart(ctxGeral, {
+        type: "bar",
+        data: {
+          labels: ["Pago", "Pendente", "A receber", "Guardado"],
+          datasets: [{
+            data: [totalPago, totalPendente, totalAReceber, Math.max(0, totalGuardado)],
+            backgroundColor: ["#2ecc71", "#e74c3c", "#3498db", "#f1c40f"]
+          }]
+        },
+        options: {
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: "#eef0f4" }, grid: { color: "#262b36" } },
+            y: { ticks: { color: "#eef0f4" }, grid: { color: "#262b36" } }
+          }
+        }
+      });
+    }
+
+    atualizarGraficoAnual();
+  }
+
+  let chartRelatorioAnual = null;
+  const mesesAbrev = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+
+  function popularAnosRelatorio() {
+    const select = document.getElementById("filtro-ano-relatorio");
+    if (select.options.length > 0) return; // já populado
+    const anoAtual = new Date().getFullYear();
+    for (let ano = anoAtual - 5; ano <= anoAtual + 3; ano++) {
+      const opt = document.createElement("option");
+      opt.value = ano;
+      opt.textContent = ano;
+      if (ano === anoAtual) opt.selected = true;
+      select.appendChild(opt);
+    }
+  }
+
+  function atualizarGraficoAnual() {
+    if (typeof Chart === "undefined") return;
+    popularAnosRelatorio();
+
+    const ano = document.getElementById("filtro-ano-relatorio").value || new Date().getFullYear();
+    const entrouPorMes = new Array(12).fill(0);
+    const saiuPorMes = new Array(12).fill(0);
+    const guardadoPorMes = new Array(12).fill(0);
+
+    entradasCache.forEach(e => {
+      if (!e.data || !e.data.startsWith(ano + "-")) return;
+      const mes = parseInt(e.data.slice(5, 7), 10) - 1;
+      entrouPorMes[mes] += (e.valor || 0);
+    });
+
+    pagamentosCache.forEach(p => {
+      if (!p.data || !p.data.startsWith(ano + "-")) return;
+      const mes = parseInt(p.data.slice(5, 7), 10) - 1;
+      saiuPorMes[mes] += (p.valor || 0);
+    });
+
+    reservasCache.forEach(r => {
+      if (!r.data || !r.data.startsWith(ano + "-")) return;
+      const mes = parseInt(r.data.slice(5, 7), 10) - 1;
+      guardadoPorMes[mes] += (r.tipo === "guardado" ? r.valor : -r.valor);
+    });
+
+    document.getElementById("anual-total-entrou").textContent = formatarMoeda(entrouPorMes.reduce((a,b) => a+b, 0));
+    document.getElementById("anual-total-saiu").textContent = formatarMoeda(saiuPorMes.reduce((a,b) => a+b, 0));
+    document.getElementById("anual-total-guardado").textContent = formatarMoeda(guardadoPorMes.reduce((a,b) => a+b, 0));
+
+    const ctx = document.getElementById("grafico-relatorio-anual");
+    if (chartRelatorioAnual) chartRelatorioAnual.destroy();
+    if (ctx) {
+      chartRelatorioAnual = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: mesesAbrev,
+          datasets: [
+            { label: "Entrou", data: entrouPorMes, backgroundColor: "#2ecc71" },
+            { label: "Saiu", data: saiuPorMes, backgroundColor: "#e74c3c" },
+            { label: "Guardado", data: guardadoPorMes, backgroundColor: "#f1c40f" }
+          ]
+        },
+        options: {
+          plugins: { legend: { labels: { color: "#eef0f4", font: { size: 11 } } } },
+          scales: {
+            x: { ticks: { color: "#eef0f4" }, grid: { color: "#262b36" } },
+            y: { ticks: { color: "#eef0f4" }, grid: { color: "#262b36" } }
+          }
+        }
+      });
+    }
+  }
+
+  document.getElementById("filtro-ano-relatorio").addEventListener("change", atualizarGraficoAnual);
+
+  document.getElementById("btn-relatorio-pdf").addEventListener("click", gerarRelatorioPDF);
+
+  function gerarRelatorioPDF() {
+    if (typeof window.jspdf === "undefined") { alert("Não consegui carregar o gerador de PDF. Verifique sua internet."); return; }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    const agora = new Date();
+    const mesAno = agora.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+
+    const totalEntradas = entradasCache.reduce((s, e) => s + (e.valor || 0), 0);
+    const totalPago = saidasCache.reduce((s, sd) => s + (sd.valorPago || 0), 0);
+    const totalPendente = saidasCache.reduce((s, sd) => s + Math.max(0, (sd.valorTotal || 0) - (sd.valorPago || 0)), 0);
+    const totalAReceber = receberCache.reduce((s, r) => s + Math.max(0, (r.valorTotal || 0) - (r.valorRecebido || 0)), 0);
+    const totalGuardado = reservasCache.reduce((s, r) => s + (r.tipo === "guardado" ? r.valor : -r.valor), 0);
+    const saldo = totalEntradas - totalPago - totalGuardado;
+
+    let y = 20;
+    doc.setFontSize(18);
+    doc.text("Relatório Financeiro - Grana Viva", 14, y);
+    y += 7;
+    doc.setFontSize(11);
+    doc.setTextColor(120);
+    doc.text(`Referente a: ${mesAno}  ·  Gerado em ${agora.toLocaleDateString("pt-BR")}`, 14, y);
+    doc.setTextColor(0);
+    y += 12;
+
+    doc.setFontSize(13);
+    doc.text("Resumo geral", 14, y); y += 8;
+    doc.setFontSize(11);
+    const linhas = [
+      [`Saldo disponível`, formatarMoeda(saldo)],
+      [`Total recebido`, formatarMoeda(totalEntradas)],
+      [`Total pago`, formatarMoeda(totalPago)],
+      [`Ainda pendente`, formatarMoeda(totalPendente)],
+      [`A receber`, formatarMoeda(totalAReceber)],
+      [`Guardado`, formatarMoeda(totalGuardado)]
+    ];
+    linhas.forEach(([label, valor]) => {
+      doc.text(label, 14, y);
+      doc.text(valor, 150, y, { align: "right" });
+      y += 7;
+    });
+
+    y += 6;
+    doc.setFontSize(13);
+    doc.text("Entradas", 14, y); y += 8;
+    doc.setFontSize(10);
+    if (entradasCache.length === 0) {
+      doc.text("Nenhuma entrada lançada.", 14, y); y += 6;
+    } else {
+      entradasCache.forEach(e => {
+        if (y > 275) { doc.addPage(); y = 20; }
+        doc.text(`${formatarData(e.data)} · ${e.origem || ""} (${e.categoria || ""})`, 14, y);
+        doc.text(formatarMoeda(e.valor), 190, y, { align: "right" });
+        y += 6;
+      });
+    }
+
+    y += 6;
+    if (y > 260) { doc.addPage(); y = 20; }
+    doc.setFontSize(13);
+    doc.text("Contas / Saídas", 14, y); y += 8;
+    doc.setFontSize(10);
+    if (saidasCache.length === 0) {
+      doc.text("Nenhuma conta lançada.", 14, y); y += 6;
+    } else {
+      saidasCache.forEach(s => {
+        if (y > 275) { doc.addPage(); y = 20; }
+        const statusTxt = s.status === "quitada" ? "Quitada" : (s.status === "parcial" ? "Parcial" : "Pendente");
+        doc.text(`${s.descricao} — ${statusTxt} (pago ${formatarMoeda(s.valorPago || 0)} de ${formatarMoeda(s.valorTotal)})`, 14, y);
+        y += 6;
+      });
+    }
+
+    y += 6;
+    if (y > 260) { doc.addPage(); y = 20; }
+    doc.setFontSize(13);
+    doc.text("A Receber", 14, y); y += 8;
+    doc.setFontSize(10);
+    if (receberCache.length === 0) {
+      doc.text("Ninguém devendo no momento.", 14, y); y += 6;
+    } else {
+      receberCache.forEach(r => {
+        if (y > 275) { doc.addPage(); y = 20; }
+        const statusTxt = r.status === "quitada" ? "Recebido" : (r.status === "parcial" ? "Parcial" : "Pendente");
+        doc.text(`${r.nome} — ${statusTxt} (recebido ${formatarMoeda(r.valorRecebido || 0)} de ${formatarMoeda(r.valorTotal)})`, 14, y);
+        y += 6;
+      });
+    }
+
+    doc.setFontSize(9);
+    doc.setTextColor(150);
+    doc.text("Fundadora: @nancysantana.dev", 14, 290);
+
+    doc.save(`relatorio-grana-viva-${agora.toISOString().slice(0,7)}.pdf`);
+  }
+
+  // ---------- HELPERS ----------
+  function rotuloTipo(tipo) {
+    const rotulos = {
+      diaria: "Diária", semanal: "Semanal", quinzenal: "Quinzenal",
+      mensal: "Mensal", anual: "Anual", avulsa: "Avulsa",
+      fixa: "Mensal" // compatibilidade com contas antigas salvas como "fixa"
+    };
+    return rotulos[tipo] || "Avulsa";
+  }
+
+  function formatarMoeda(valor) {
+    return (valor || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  }
+  function formatarData(dataStr) {
+    const [ano, mes, dia] = dataStr.split("-");
+    return `${dia}/${mes}/${ano}`;
+  }
 </script>
+
+<script>
+  // Registra o service worker (permite instalar como app / abrir offline)
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js").catch(() => {});
+    });
+  }
+</script>
+
 </body>
 </html>
