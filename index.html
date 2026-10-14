@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -239,7 +240,6 @@
     right: 12px;
     top: 50%;
     transform: translateY(-50%);
-    width: auto;
     background: none;
     border: none;
     cursor: pointer;
@@ -247,7 +247,6 @@
     line-height: 1;
     padding: 4px;
     opacity: 0.75;
-    z-index: 2;
   }
   .toggle-senha:hover { opacity: 1; }
   .card-acoes {
@@ -395,23 +394,6 @@
     <div id="lista-alertas"></div>
   </div>
 
-  <div id="banner-renovacao" class="banner-alertas hidden" style="background:#3a2a12; border-color:#f1c40f;">
-    <div class="titulo-alerta">💳 Pagamento pendente</div>
-    <div id="texto-renovacao" style="font-size:13px;"></div>
-  </div>
-
-  <div class="overlay hidden" id="overlay-boasvindas">
-    <div class="modal">
-      <h2>🎉 Bem-vindo(a) ao Grana Viva!</h2>
-      <p style="color:var(--muted); font-size:14px; line-height:1.5;">
-        Esse é o seu espaço pra organizar as finanças de um jeito simples: lance suas entradas,
-        cadastre suas contas e acompanhe tudo em um só lugar. Qualquer dúvida, é só falar com quem
-        te indicou o sistema.
-      </p>
-      <button id="fechar-boasvindas">Vamos começar!</button>
-    </div>
-  </div>
-
   <div class="filtro-mes-wrap">
     <label style="margin:0;">📅 Mês</label>
     <select id="filtro-mes-select"></select>
@@ -427,7 +409,7 @@
     <div class="tab" data-tab="receber">A Receber</div>
     <div class="tab" data-tab="investimentos">Investimentos</div>
     <div class="tab" data-tab="resumo">Resumo</div>
-    <div class="tab hidden" data-tab="economista" id="tab-nav-economista">📈 Economista</div>
+    <div class="tab" data-tab="economista">📊 Economista</div>
   </div>
 
   <div id="tab-entradas" class="tab-content active">
@@ -482,42 +464,24 @@
 
   <div id="tab-economista" class="tab-content">
     <div class="resumo-card">
-      <h3>💼 Saldo inicial (antes de usar o app)</h3>
-      <label>Você já tinha algum valor guardado antes de começar a registrar aqui?</label>
-      <input type="number" step="0.01" id="economista-saldo-inicial" placeholder="Ex: 5000.00">
-      <button id="salvar-saldo-inicial">Salvar saldo inicial</button>
+      <h3>💹 Taxa de poupança do mês</h3>
+      <div class="linha-resumo"><span>Quanto você guardou/investiu do que entrou</span><span class="valor-sensivel" id="taxa-poupanca-valor">0%</span></div>
+      <p id="taxa-poupanca-comentario" style="font-size:13px; color:#9aa1ac; margin-top:6px;"></p>
     </div>
-
-    <div id="economista-vazio" class="resumo-card hidden">
-      <p class="vazio">Lance algumas entradas e contas primeiro para ver seus indicadores aqui.</p>
+    <div class="resumo-card">
+      <h3>📈 Evolução do patrimônio líquido</h3>
+      <p style="font-size:12px; color:#9aa1ac; margin-top:-4px; margin-bottom:8px;">Soma acumulada de guardado + investido, mês a mês</p>
+      <div class="chart-wrap valor-sensivel"><canvas id="grafico-patrimonio-liquido"></canvas></div>
     </div>
-
-    <div id="economista-conteudo" class="hidden">
-      <div class="resumo-card">
-        <h3>📊 Taxa de poupança do mês atual</h3>
-        <div class="linha-resumo"><span>% da sua renda que sobrou</span><span class="valor-sensivel" id="economista-taxa-atual">0%</span></div>
-      </div>
-
-      <div class="resumo-card">
-        <h3>📈 Patrimônio: real vs. se tivesse rendido no CDI</h3>
-        <div class="chart-wrap valor-sensivel"><canvas id="grafico-economista-evolucao"></canvas></div>
-        <div class="linha-resumo"><span>💰 Saldo acumulado real</span><span class="valor-sensivel" id="economista-saldo-real">R$ 0,00</span></div>
-        <div class="linha-resumo"><span>🏦 Se tivesse rendido no CDI</span><span class="valor-sensivel" id="economista-saldo-cdi">R$ 0,00</span></div>
-        <div class="linha-resumo"><span>📉 Rendimento que você não teve</span><span class="valor-sensivel" id="economista-diferenca">R$ 0,00</span></div>
-      </div>
-
-      <div class="resumo-card">
-        <h3>🗓️ Taxa de poupança por mês</h3>
-        <div class="chart-wrap valor-sensivel"><canvas id="grafico-economista-poupanca"></canvas></div>
-      </div>
-
-      <div class="resumo-card">
-        <p style="font-size:12px; color:var(--muted); margin:0;">📌 O CDI usado aqui é a taxa mensal divulgada pelo Banco Central (série 4391). O comparativo assume que o valor que sobrou (ou o saldo inicial) tivesse ficado investido rendendo 100% do CDI, mês a mês, em vez de parado na conta.</p>
-      </div>
+    <div class="resumo-card">
+      <h3>🏦 Comparativo com o CDI</h3>
+      <p style="font-size:12px; color:#9aa1ac; margin-top:-4px; margin-bottom:8px;">Crescimento do seu patrimônio guardado vs. o que o CDI teria rendido no mesmo período</p>
+      <div id="cdi-status" style="font-size:13px; color:#9aa1ac; margin-bottom:8px;">Carregando dados do Banco Central...</div>
+      <div class="chart-wrap valor-sensivel"><canvas id="grafico-cdi"></canvas></div>
     </div>
   </div>
 
-  <footer>Fundadora: <a href="https://instagram.com/nancysantana.dev" target="_blank">@nancysantana.dev</a></footer>
+  <footer>Feito por <a href="https://instagram.com/nancysantana.dev" target="_blank">@nancysantana.dev</a></footer>
 </div>
 
 <div class="fab hidden" id="fab-add">+</div>
@@ -543,9 +507,15 @@
     <label>Valor recebido (R$)</label>
     <input type="number" step="0.01" id="entrada-valor" placeholder="Ex: 1500">
     <label>De onde veio</label>
-    <input type="text" id="entrada-origem" placeholder="Ex: Cliente João, venda Mary Kay...">
+    <input type="text" id="entrada-origem" placeholder="Ex: Fernando - Val Beleza">
     <label>Categoria</label>
-    <select id="entrada-categoria"></select>
+    <select id="entrada-categoria">
+      <option value="Salário Val">Salário Val</option>
+      <option value="Freela - site">Freela - site</option>
+      <option value="Unhas">Unhas</option>
+      <option value="Brechó">Brechó</option>
+      <option value="Outro">Outro</option>
+    </select>
     <label>Data</label>
     <input type="date" id="entrada-data">
     <button id="salvar-entrada">Salvar entrada</button>
@@ -565,6 +535,7 @@
       <option value="Contas de casa">Contas de casa (luz, água, internet, gás)</option>
       <option value="Mercado">Mercado / Alimentação</option>
       <option value="Transporte">Transporte</option>
+      <option value="Combustível">Combustível</option>
       <option value="Saúde">Saúde</option>
       <option value="Educação">Educação</option>
       <option value="Entretenimento">Entretenimento / Lazer</option>
@@ -608,6 +579,8 @@
     <input type="number" step="0.01" id="reserva-valor" placeholder="Ex: 1000">
     <label>Descrição (opcional)</label>
     <input type="text" id="reserva-descricao" placeholder="Ex: Reserva de emergência">
+    <label>Data</label>
+    <input type="date" id="reserva-data">
     <button id="salvar-reserva">Salvar</button>
   </div>
 </div>
@@ -666,7 +639,6 @@
     <p style="color:var(--muted); font-size:13px; margin-bottom:10px;" id="recebimento-info"></p>
     <label>Valor recebido agora (R$)</label>
     <input type="number" step="0.01" id="recebimento-valor" placeholder="Pode ser parcial">
-    <button id="quitar-recebimento-tudo" class="secondary" style="margin-top:10px;">✅ Recebi tudo (quitar)</button>
     <button id="salvar-recebimento">Confirmar recebimento</button>
   </div>
 </div>
@@ -701,7 +673,7 @@
   } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
   import {
     getFirestore, collection, addDoc, onSnapshot, query, orderBy, where,
-    doc, updateDoc, serverTimestamp, deleteDoc, getDoc, setDoc, arrayUnion
+    doc, updateDoc, serverTimestamp, deleteDoc
   } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -724,87 +696,7 @@
   const recebimentosRef = collection(db, "recebimentos");
   const reservasRef = collection(db, "reservas");
   const investimentosRef = collection(db, "investimentos");
-  const usuariosRef = collection(db, "usuarios");
   let uidAtual = null;
-  let planoAtual = "base";
-  let saldoInicialAtual = 0;
-  let categoriasEntradaAtual = ["Salário", "Freelance", "Vendas", "Outro"];
-
-  // ---------- CATEGORIAS DE ENTRADA (personalizáveis por usuário) ----------
-  function renderizarCategoriasEntrada(selecionarValor) {
-    const select = document.getElementById("entrada-categoria");
-    let lista = [...categoriasEntradaAtual];
-    if (selecionarValor && !lista.includes(selecionarValor)) lista.unshift(selecionarValor);
-    select.innerHTML = lista.map(c => `<option value="${c}">${c}</option>`).join("")
-      + `<option value="__nova__">➕ Criar nova categoria...</option>`;
-    if (selecionarValor) select.value = selecionarValor;
-  }
-
-  document.getElementById("entrada-categoria").addEventListener("change", async (e) => {
-    if (e.target.value !== "__nova__") return;
-    const nome = (window.prompt("Nome da nova categoria (ex: Mary Kay, Comissões, Aluguel de imóvel...)") || "").trim();
-    if (!nome) {
-      renderizarCategoriasEntrada(categoriasEntradaAtual[0]);
-      return;
-    }
-    if (!categoriasEntradaAtual.includes(nome)) {
-      categoriasEntradaAtual.push(nome);
-      await setDoc(doc(db, "usuarios", uidAtual), { categoriasEntrada: arrayUnion(nome) }, { merge: true });
-    }
-    renderizarCategoriasEntrada(nome);
-  });
-
-  // ---------- PLANO DO USUÁRIO (base / economista) ----------
-  async function carregarUsuario() {
-    const refUsuario = doc(db, "usuarios", uidAtual);
-    const snap = await getDoc(refUsuario);
-    if (!snap.exists()) {
-      await setDoc(refUsuario, { plano: "base", saldoInicial: 0, categoriasEntrada: categoriasEntradaAtual });
-      planoAtual = "base";
-      saldoInicialAtual = 0;
-      aplicarPlano();
-      abrir("overlay-boasvindas");
-    } else {
-      const d = snap.data();
-      planoAtual = d.plano || "base";
-      saldoInicialAtual = d.saldoInicial || 0;
-      if (d.categoriasEntrada && d.categoriasEntrada.length) categoriasEntradaAtual = d.categoriasEntrada;
-      aplicarPlano();
-      aplicarBannerRenovacao(d);
-    }
-    renderizarCategoriasEntrada();
-  }
-
-  function aplicarBannerRenovacao(dadosUsuario) {
-    const banner = document.getElementById("banner-renovacao");
-    const texto = document.getElementById("texto-renovacao");
-    if (dadosUsuario.renovacaoPendente && dadosUsuario.bloqueioApos) {
-      const dias = Math.max(0, Math.ceil((dadosUsuario.bloqueioApos - Date.now()) / (1000 * 60 * 60 * 24)));
-      texto.textContent = `Não conseguimos confirmar seu último pagamento. Você tem ${dias} dia(s) para renovar antes do acesso ser bloqueado.`;
-      banner.classList.remove("hidden");
-    } else {
-      banner.classList.add("hidden");
-    }
-  }
-
-  function aplicarPlano() {
-    const navEconomista = document.getElementById("tab-nav-economista");
-    if (planoAtual === "economista") {
-      navEconomista.classList.remove("hidden");
-      document.getElementById("economista-saldo-inicial").value = saldoInicialAtual || "";
-    } else {
-      navEconomista.classList.add("hidden");
-    }
-  }
-
-  document.getElementById("salvar-saldo-inicial").addEventListener("click", async () => {
-    const valor = parseFloat(document.getElementById("economista-saldo-inicial").value) || 0;
-    saldoInicialAtual = valor;
-    await setDoc(doc(db, "usuarios", uidAtual), { saldoInicial: valor }, { merge: true });
-    atualizarModoEconomista();
-  });
-
-  document.getElementById("fechar-boasvindas").addEventListener("click", () => fechar("overlay-boasvindas"));
 
   // ---------- LOGIN ----------
   const loginScreen = document.getElementById("login-screen");
@@ -820,16 +712,20 @@
     try {
       await signInWithEmailAndPassword(auth, email, senha);
     } catch (erro) {
-      if (erro.code === "auth/user-disabled") {
-        loginError.textContent = "Sua assinatura está vencida. Renove seu plano para voltar a usar o sistema.";
+      console.error("Erro no login:", erro.code, erro.message);
+      if (erro.code === "auth/too-many-requests") {
+        loginError.textContent = "Muitas tentativas seguidas. Aguarde 1 minuto e tente de novo.";
+      } else if (erro.code === "auth/network-request-failed") {
+        loginError.textContent = "Sem conexão com a internet agora. Verifique sua rede e tente de novo.";
+      } else if (erro.code === "auth/user-disabled") {
+        loginError.textContent = "Essa conta foi desativada. Fale com o suporte.";
+      } else if (erro.code === "auth/invalid-email") {
+        loginError.textContent = "E-mail em formato inválido.";
       } else if (erro.code === "auth/invalid-credential" || erro.code === "auth/wrong-password" || erro.code === "auth/user-not-found") {
         loginError.textContent = "E-mail ou senha incorretos.";
       } else {
-        // Erro diferente do normal (rede, muitas tentativas, hora do aparelho errada, etc.)
-        // Mostra o código pra ajudar a identificar a causa real.
-        loginError.textContent = `Não foi possível entrar. Tenta de novo em alguns segundos. (código: ${erro.code || "desconhecido"})`;
+        loginError.textContent = "Não foi possível entrar agora. Tente de novo em alguns segundos.";
       }
-      console.error("Erro de login:", erro);
     }
   });
 
@@ -868,7 +764,6 @@
       loginScreen.classList.add("hidden");
       appScreen.classList.remove("hidden");
       fabAdd.classList.remove("hidden");
-      carregarUsuario();
       carregarEntradas();
       carregarSaidas();
       carregarReceber();
@@ -888,6 +783,7 @@
       document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
       tab.classList.add("active");
       document.getElementById("tab-" + tab.dataset.tab).classList.add("active");
+      if (tab.dataset.tab === "economista") atualizarModoEconomista();
     });
   });
 
@@ -909,7 +805,6 @@
     document.getElementById("entrada-valor").value = "";
     document.getElementById("entrada-origem").value = "";
     document.getElementById("entrada-data").value = new Date().toISOString().slice(0,10);
-    renderizarCategoriasEntrada(categoriasEntradaAtual[0]);
     abrir("overlay-entrada");
   });
 
@@ -956,19 +851,21 @@
     const tipo = document.getElementById("reserva-tipo").value;
     const valor = parseFloat(document.getElementById("reserva-valor").value);
     const descricao = document.getElementById("reserva-descricao").value.trim();
+    const dataEscolhida = document.getElementById("reserva-data").value || new Date().toISOString().slice(0,10);
 
     if (!valor || valor <= 0) { alert("Coloca um valor válido."); return; }
 
     await addDoc(reservasRef, {
       ownerId: uidAtual,
       tipo, valor, descricao,
-      data: new Date().toISOString().slice(0,10),
+      data: dataEscolhida,
       criadoEm: serverTimestamp()
     });
 
     document.getElementById("reserva-valor").value = "";
     document.getElementById("reserva-descricao").value = "";
     document.getElementById("reserva-tipo").value = "guardado";
+    document.getElementById("reserva-data").value = "";
     fechar("overlay-reserva");
   });
 
@@ -1150,6 +1047,8 @@
       snap.forEach(docSnap => entradasCache.push({ id: docSnap.id, ...docSnap.data() }));
       renderizarEntradas();
       atualizarPainel();
+    }, (erro) => {
+      console.error("Erro ao carregar entradas:", erro.code, erro.message);
     });
   }
 
@@ -1173,12 +1072,20 @@
             </div>
             <div class="card-acoes">
               <button class="small secondary" data-editar-entrada="${id}">Editar</button>
+              <button class="small secondary" data-excluir-entrada="${id}">🗑️ Excluir</button>
             </div>
           </div>`;
       });
 
       document.querySelectorAll("[data-editar-entrada]").forEach(btn => {
         btn.addEventListener("click", () => abrirEdicaoEntrada(btn.dataset.editarEntrada));
+      });
+      document.querySelectorAll("[data-excluir-entrada]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          if (confirm("Excluir essa entrada? Essa ação não pode ser desfeita.")) {
+            await deleteDoc(doc(db, "entradas", btn.dataset.excluirEntrada));
+          }
+        });
       });
     }
   }
@@ -1192,6 +1099,8 @@
       snap.forEach(docSnap => saidasCache.push({ id: docSnap.id, ...docSnap.data() }));
       renderizarSaidas();
       atualizarPainel();
+    }, (erro) => {
+      console.error("Erro ao carregar saídas:", erro.code, erro.message);
     });
   }
 
@@ -1199,15 +1108,6 @@
     const lista = document.getElementById("lista-saidas");
     // pendente/parcial ficam sempre visíveis (independente do mês); só as quitadas entram no filtro
     const itens = saidasCache.filter(d => d.status !== "quitada" || estaNoMesFiltrado(d.vencimento));
-
-    // Contas vencendo/vencidas sobem pro topo automaticamente; quitadas ficam por último
-    itens.sort((a, b) => {
-      const prioridade = (item) => item.status === "quitada" ? 2 : (item.vencimento ? 0 : 1);
-      const pa = prioridade(a), pb = prioridade(b);
-      if (pa !== pb) return pa - pb;
-      if (a.vencimento && b.vencimento) return a.vencimento.localeCompare(b.vencimento);
-      return 0;
-    });
     if (itens.length === 0) {
       lista.innerHTML = '<div class="vazio">Nenhuma conta neste período</div>';
     } else {
@@ -1275,6 +1175,8 @@
       snap.forEach(docSnap => receberCache.push({ id: docSnap.id, ...docSnap.data() }));
       renderizarReceber();
       atualizarPainel();
+    }, (erro) => {
+      console.error("Erro ao carregar a receber:", erro.code, erro.message);
     });
   }
 
@@ -1347,7 +1249,7 @@
     editandoEntradaId = id;
     document.getElementById("entrada-valor").value = item.valor;
     document.getElementById("entrada-origem").value = item.origem || "";
-    renderizarCategoriasEntrada(item.categoria || categoriasEntradaAtual[0]);
+    document.getElementById("entrada-categoria").value = item.categoria || "Outro";
     document.getElementById("entrada-data").value = item.data || "";
     document.getElementById("titulo-entrada").textContent = "Editar entrada";
     document.getElementById("salvar-entrada").textContent = "Salvar alterações";
@@ -1398,17 +1300,7 @@
   document.getElementById("salvar-recebimento").addEventListener("click", async () => {
     const valorAgora = parseFloat(document.getElementById("recebimento-valor").value);
     if (!valorAgora || valorAgora <= 0) { alert("Coloca um valor válido."); return; }
-    await confirmarRecebimento(valorAgora);
-  });
 
-  document.getElementById("quitar-recebimento-tudo").addEventListener("click", async () => {
-    const item = receberCache.find(r => r.id === receberSelecionadoId);
-    if (!item) return;
-    const restante = item.valorTotal - (item.valorRecebido || 0);
-    await confirmarRecebimento(restante);
-  });
-
-  async function confirmarRecebimento(valorAgora) {
     const item = receberCache.find(r => r.id === receberSelecionadoId);
     if (!item) return;
 
@@ -1442,7 +1334,7 @@
     });
 
     fechar("overlay-recebimento");
-  }
+  });
 
   // ---------- REGISTRAR PAGAMENTO ----------
   let saidaSelecionadaId = null;
@@ -1548,7 +1440,8 @@
     pagamentosCache = [];
     snap.forEach(docSnap => pagamentosCache.push(docSnap.data()));
     if (typeof atualizarGraficoAnual === "function") atualizarGraficoAnual();
-    if (typeof atualizarModoEconomista === "function") atualizarModoEconomista();
+  }, (erro) => {
+    console.error("Erro ao carregar pagamentos:", erro.code, erro.message);
   });
 
   function abrirHistorico(saidaId) {
@@ -1583,6 +1476,8 @@
   onSnapshot(query(recebimentosRef, where("ownerId", "==", uidAtual), orderBy("criadoEm", "desc")), (snap) => {
     recebimentosCache = [];
     snap.forEach(docSnap => recebimentosCache.push(docSnap.data()));
+  }, (erro) => {
+    console.error("Erro ao carregar recebimentos:", erro.code, erro.message);
   });
 
   function abrirHistoricoReceber(receberId) {
@@ -1619,6 +1514,8 @@
       reservasCache = [];
       snap.forEach(docSnap => reservasCache.push(docSnap.data()));
       atualizarPainel();
+    }, (erro) => {
+      console.error("Erro ao carregar reservas:", erro.code, erro.message);
     });
   }
 
@@ -1662,12 +1559,222 @@
       }
       atualizarTotalInvestido();
       atualizarGraficosInvestimentos();
+      if (document.getElementById("tab-economista")?.classList.contains("active")) atualizarModoEconomista();
+    }, (erro) => {
+      console.error("Erro ao carregar investimentos:", erro.code, erro.message);
     });
   }
 
   function atualizarTotalInvestido() {
     const total = investimentosCache.reduce((s, i) => s + (i.valor || 0), 0);
     document.getElementById("total-investido").textContent = formatarMoeda(total);
+  }
+
+  // ---------- MODO ECONOMISTA ----------
+  function atualizarModoEconomista() {
+    atualizarTaxaPoupanca();
+    atualizarGraficoPatrimonioLiquido();
+    atualizarComparativoCDI();
+  }
+
+  function atualizarTaxaPoupanca() {
+    const hoje = new Date();
+    const anoMes = hoje.toISOString().slice(0, 7); // "YYYY-MM"
+
+    const entradasMes = entradasCache
+      .filter(e => e.data && e.data.startsWith(anoMes))
+      .reduce((s, e) => s + (e.valor || 0), 0);
+
+    const guardadoMes = reservasCache
+      .filter(r => r.data && r.data.startsWith(anoMes))
+      .reduce((s, r) => s + (r.tipo === "guardado" ? r.valor : -r.valor), 0);
+
+    const investidoMes = investimentosCache
+      .filter(i => i.data && i.data.startsWith(anoMes))
+      .reduce((s, i) => s + (i.valor || 0), 0);
+
+    const poupadoMes = guardadoMes + investidoMes;
+    const taxa = entradasMes > 0 ? (poupadoMes / entradasMes) * 100 : 0;
+
+    const elValor = document.getElementById("taxa-poupanca-valor");
+    const elComentario = document.getElementById("taxa-poupanca-comentario");
+    if (!elValor) return;
+
+    elValor.textContent = `${taxa.toFixed(1)}%`;
+
+    if (entradasMes === 0) {
+      elComentario.textContent = "Ainda não há entradas lançadas este mês pra calcular.";
+    } else if (taxa >= 20) {
+      elComentario.textContent = "Ótimo! Especialistas costumam recomendar guardar pelo menos 20% da renda.";
+    } else if (taxa >= 10) {
+      elComentario.textContent = "Bom ritmo. Ainda dá pra tentar chegar nos 20% recomendados.";
+    } else if (taxa > 0) {
+      elComentario.textContent = "Você está guardando algo, mas abaixo do recomendado (20% da renda).";
+    } else {
+      elComentario.textContent = "Nenhum valor guardado ou investido este mês ainda.";
+    }
+  }
+
+  // Agrupa guardado+investido por mês (YYYY-MM), retorna array ordenado de {mes, valorMes, acumulado}
+  function calcularPatrimonioMensal() {
+    const porMes = {};
+    reservasCache.forEach(r => {
+      if (!r.data) return;
+      const m = r.data.slice(0, 7);
+      porMes[m] = (porMes[m] || 0) + (r.tipo === "guardado" ? r.valor : -r.valor);
+    });
+    investimentosCache.forEach(i => {
+      if (!i.data) return;
+      const m = i.data.slice(0, 7);
+      porMes[m] = (porMes[m] || 0) + (i.valor || 0);
+    });
+
+    const meses = Object.keys(porMes).sort();
+    let acumulado = 0;
+    return meses.map(m => {
+      acumulado += porMes[m];
+      return { mes: m, valorMes: porMes[m], acumulado };
+    });
+  }
+
+  let chartPatrimonioLiquido = null;
+  function atualizarGraficoPatrimonioLiquido() {
+    if (typeof Chart === "undefined") return;
+    const ctx = document.getElementById("grafico-patrimonio-liquido");
+    if (!ctx) return;
+
+    const serie = calcularPatrimonioMensal();
+    if (chartPatrimonioLiquido) chartPatrimonioLiquido.destroy();
+    if (serie.length === 0) return;
+
+    chartPatrimonioLiquido = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: serie.map(p => formatarMesAno(p.mes)),
+        datasets: [{
+          label: "Patrimônio acumulado",
+          data: serie.map(p => p.acumulado),
+          borderColor: "#2ecc71",
+          backgroundColor: "rgba(46,204,113,0.15)",
+          fill: true,
+          tension: 0.3
+        }]
+      },
+      options: {
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: "#eef0f4" }, grid: { color: "#262b36" } },
+          y: { ticks: { color: "#eef0f4" }, grid: { color: "#262b36" } }
+        }
+      }
+    });
+  }
+
+  function formatarMesAno(anoMes) {
+    const [ano, mes] = anoMes.split("-");
+    return `${mesesAbrev[parseInt(mes, 10) - 1]}/${ano.slice(2)}`;
+  }
+
+  // ---------- CDI (API pública do Banco Central) ----------
+  let chartCDI = null;
+  let cdiCacheMensal = null; // { "YYYY-MM": taxaDoMesEmPercentual }
+
+  async function buscarCDIMensal(dataInicial, dataFinal) {
+    // Série 4391 = Taxa de juros - CDI acumulada no mês
+    const fmt = (d) => `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;
+    const url = `https://api.bcb.gov.br/dados/serie/bcdata.sgs.4391/dados?formato=json&dataInicial=${fmt(dataInicial)}&dataFinal=${fmt(dataFinal)}`;
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error("Não foi possível consultar o Banco Central agora.");
+    const dados = await resp.json();
+    const porMes = {};
+    dados.forEach(item => {
+      // item.data vem como "DD/MM/YYYY", representando o mês de referência
+      const [dia, mes, ano] = item.data.split("/");
+      const chave = `${ano}-${mes}`;
+      porMes[chave] = parseFloat(item.valor.replace(",", "."));
+    });
+    return porMes;
+  }
+
+  async function atualizarComparativoCDI() {
+    const ctx = document.getElementById("grafico-cdi");
+    const status = document.getElementById("cdi-status");
+    if (!ctx) return;
+
+    const serie = calcularPatrimonioMensal();
+    if (serie.length < 2) {
+      if (status) status.textContent = "Lance guardado/investimentos em pelo menos 2 meses diferentes pra ver essa comparação.";
+      if (chartCDI) { chartCDI.destroy(); chartCDI = null; }
+      return;
+    }
+
+    try {
+      const primeiroMes = serie[0].mes; // "YYYY-MM"
+      const ultimoMes = serie[serie.length - 1].mes;
+      const [anoIni, mesIni] = primeiroMes.split("-").map(Number);
+      const [anoFim, mesFim] = ultimoMes.split("-").map(Number);
+      const dataInicial = new Date(anoIni, mesIni - 1, 1);
+      const dataFinal = new Date(anoFim, mesFim, 0); // último dia do mês final
+
+      if (!cdiCacheMensal) {
+        cdiCacheMensal = await buscarCDIMensal(dataInicial, dataFinal);
+      }
+
+      // Índice base 100 pra ambas as séries, a partir do primeiro mês com saldo positivo
+      const baseIdx = serie.findIndex(p => p.acumulado > 0);
+      if (baseIdx === -1) {
+        if (status) status.textContent = "Ainda sem saldo acumulado positivo pra comparar.";
+        return;
+      }
+
+      const labels = [];
+      const indicePatrimonio = [];
+      const indiceCDI = [];
+      let fatorCDI = 100;
+      const valorBase = serie[baseIdx].acumulado;
+
+      serie.slice(baseIdx).forEach((p, idx) => {
+        labels.push(formatarMesAno(p.mes));
+        indicePatrimonio.push((p.acumulado / valorBase) * 100);
+
+        const taxaMes = cdiCacheMensal[p.mes.replace("-", "-")] ?? 0; // já está "YYYY-MM"
+        if (idx > 0) fatorCDI *= (1 + taxaMes / 100);
+        indiceCDI.push(fatorCDI);
+      });
+
+      const rendimentoPatrimonio = indicePatrimonio[indicePatrimonio.length - 1] - 100;
+      const rendimentoCDI = indiceCDI[indiceCDI.length - 1] - 100;
+
+      if (status) {
+        if (rendimentoPatrimonio >= rendimentoCDI) {
+          status.textContent = `🎉 Seu patrimônio cresceu ${rendimentoPatrimonio.toFixed(1)}% no período, acima do CDI (${rendimentoCDI.toFixed(1)}%).`;
+        } else {
+          status.textContent = `Seu patrimônio cresceu ${rendimentoPatrimonio.toFixed(1)}% no período, abaixo do CDI (${rendimentoCDI.toFixed(1)}%).`;
+        }
+      }
+
+      if (chartCDI) chartCDI.destroy();
+      chartCDI = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels,
+          datasets: [
+            { label: "Seu patrimônio (indexado)", data: indicePatrimonio, borderColor: "#2ecc71", backgroundColor: "rgba(46,204,113,0.1)", tension: 0.3 },
+            { label: "CDI (indexado)", data: indiceCDI, borderColor: "#f1c40f", backgroundColor: "rgba(241,196,15,0.1)", tension: 0.3, borderDash: [5,5] }
+          ]
+        },
+        options: {
+          plugins: { legend: { labels: { color: "#eef0f4", font: { size: 11 } } } },
+          scales: {
+            x: { ticks: { color: "#eef0f4" }, grid: { color: "#262b36" } },
+            y: { ticks: { color: "#eef0f4" }, grid: { color: "#262b36" } }
+          }
+        }
+      });
+    } catch (erro) {
+      console.error("Erro ao buscar CDI:", erro);
+      if (status) status.textContent = "Não consegui consultar o Banco Central agora. Tenta de novo mais tarde.";
+    }
   }
 
   function atualizarPainel() {
@@ -1687,135 +1794,7 @@
 
     verificarVencimentos();
     atualizarGraficos();
-    atualizarModoEconomista();
-  }
-
-  // ---------- MODO ECONOMISTA ----------
-  let cdiCache = null; // evita buscar de novo a cada atualização
-  let chartEconomistaEvolucao = null;
-  let chartEconomistaPoupanca = null;
-
-  async function buscarCDIMensal(dataInicial) {
-    const fmt = (d) => `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;
-    const hoje = new Date();
-    const url = `https://api.bcb.gov.br/dados/serie/bcdata.sgs.4391/dados?formato=json&dataInicial=${fmt(dataInicial)}&dataFinal=${fmt(hoje)}`;
-    try {
-      const resp = await fetch(url);
-      const dados = await resp.json();
-      const mapa = {};
-      dados.forEach(item => {
-        const [dia, mes, ano] = item.data.split("/");
-        mapa[`${ano}-${mes}`] = parseFloat(item.valor.replace(",", ".")) / 100;
-      });
-      return mapa;
-    } catch (e) {
-      console.error("Não foi possível buscar o CDI no Banco Central:", e);
-      return {};
-    }
-  }
-
-  function formatarMesLabel(mesStr) {
-    const [ano, mes] = mesStr.split("-").map(Number);
-    return `${mesesAbrev[mes - 1]}/${String(ano).slice(2)}`;
-  }
-
-  async function atualizarModoEconomista() {
-    if (planoAtual !== "economista") return;
-
-    const mesesSet = new Set();
-    entradasCache.forEach(e => { if (e.data) mesesSet.add(e.data.slice(0, 7)); });
-    pagamentosCache.forEach(p => { if (p.data) mesesSet.add(p.data.slice(0, 7)); });
-
-    const vazio = document.getElementById("economista-vazio");
-    const conteudo = document.getElementById("economista-conteudo");
-
-    if (mesesSet.size === 0) {
-      vazio.classList.remove("hidden");
-      conteudo.classList.add("hidden");
-      return;
-    }
-    vazio.classList.add("hidden");
-    conteudo.classList.remove("hidden");
-
-    const meses = Array.from(mesesSet).sort();
-    const [anoIni, mesIni] = meses[0].split("-").map(Number);
-    const dataInicial = new Date(anoIni, mesIni - 1, 1);
-
-    if (!cdiCache) cdiCache = await buscarCDIMensal(dataInicial);
-
-    let saldoReal = saldoInicialAtual;
-    let saldoCDI = saldoInicialAtual;
-    const labels = [];
-    const serieReal = [];
-    const serieCDI = [];
-    const serieTaxaPoupanca = [];
-
-    meses.forEach(mes => {
-      const totalEntradas = entradasCache
-        .filter(e => e.data && e.data.slice(0, 7) === mes)
-        .reduce((s, e) => s + (e.valor || 0), 0);
-      const totalPago = pagamentosCache
-        .filter(p => p.data && p.data.slice(0, 7) === mes)
-        .reduce((s, p) => s + (p.valor || 0), 0);
-      const sobra = totalEntradas - totalPago;
-      const taxaPoupanca = totalEntradas > 0 ? (sobra / totalEntradas) * 100 : 0;
-
-      saldoReal += sobra;
-
-      const taxaMes = cdiCache[mes] || 0;
-      saldoCDI = saldoCDI * (1 + taxaMes) + sobra;
-
-      labels.push(formatarMesLabel(mes));
-      serieReal.push(Math.round(saldoReal * 100) / 100);
-      serieCDI.push(Math.round(saldoCDI * 100) / 100);
-      serieTaxaPoupanca.push(Math.round(taxaPoupanca * 10) / 10);
-    });
-
-    document.getElementById("economista-taxa-atual").textContent = serieTaxaPoupanca[serieTaxaPoupanca.length - 1] + "%";
-    document.getElementById("economista-saldo-real").textContent = formatarMoeda(saldoReal);
-    document.getElementById("economista-saldo-cdi").textContent = formatarMoeda(saldoCDI);
-    document.getElementById("economista-diferenca").textContent = formatarMoeda(Math.max(0, saldoCDI - saldoReal));
-
-    const ctxEvolucao = document.getElementById("grafico-economista-evolucao");
-    if (chartEconomistaEvolucao) chartEconomistaEvolucao.destroy();
-    if (ctxEvolucao) {
-      chartEconomistaEvolucao = new Chart(ctxEvolucao, {
-        type: "line",
-        data: {
-          labels,
-          datasets: [
-            { label: "Saldo real", data: serieReal, borderColor: "#6c5ce7", backgroundColor: "rgba(108,92,231,0.15)", fill: true, tension: 0.3 },
-            { label: "Se rendesse no CDI", data: serieCDI, borderColor: "#2ecc71", backgroundColor: "rgba(46,204,113,0.1)", fill: true, tension: 0.3 }
-          ]
-        },
-        options: {
-          plugins: { legend: { labels: { color: "#eef0f4" } } },
-          scales: {
-            x: { ticks: { color: "#eef0f4" }, grid: { color: "#262b36" } },
-            y: { ticks: { color: "#eef0f4" }, grid: { color: "#262b36" } }
-          }
-        }
-      });
-    }
-
-    const ctxPoupanca = document.getElementById("grafico-economista-poupanca");
-    if (chartEconomistaPoupanca) chartEconomistaPoupanca.destroy();
-    if (ctxPoupanca) {
-      chartEconomistaPoupanca = new Chart(ctxPoupanca, {
-        type: "bar",
-        data: {
-          labels,
-          datasets: [{ label: "Taxa de poupança (%)", data: serieTaxaPoupanca, backgroundColor: "#f1c40f" }]
-        },
-        options: {
-          plugins: { legend: { display: false } },
-          scales: {
-            x: { ticks: { color: "#eef0f4" }, grid: { color: "#262b36" } },
-            y: { ticks: { color: "#eef0f4" }, grid: { color: "#262b36" } }
-          }
-        }
-      });
-    }
+    if (document.getElementById("tab-economista")?.classList.contains("active")) atualizarModoEconomista();
   }
 
   // ---------- ALERTAS DE VENCIMENTO ----------
@@ -2155,7 +2134,7 @@
 
     doc.setFontSize(9);
     doc.setTextColor(150);
-    doc.text("Fundadora: @nancysantana.dev", 14, 290);
+    doc.text("Feito por @nancysantana.dev", 14, 290);
 
     doc.save(`relatorio-grana-viva-${agora.toISOString().slice(0,7)}.pdf`);
   }
