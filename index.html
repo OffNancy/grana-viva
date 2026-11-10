@@ -621,7 +621,9 @@
     <input type="number" step="0.01" id="receber-valor" placeholder="Ex: 800">
     <label>Referente a</label>
     <input type="text" id="receber-descricao" placeholder="Ex: Sinal do site">
-    <label>Data combinada / previsão</label>
+    <label>Telefone / WhatsApp (opcional)</label>
+    <input type="tel" id="receber-telefone" placeholder="Ex: 47 99999-9999">
+    <label>Data combinada / previsão (vencimento)</label>
     <input type="date" id="receber-data">
     <div id="receber-editar-recebido-wrap" class="hidden">
       <label>Já recebido (R$) <span style="color:var(--muted); font-weight:normal;">— corrige aqui se registrou errado</span></label>
@@ -829,6 +831,7 @@
     document.getElementById("receber-nome").value = "";
     document.getElementById("receber-valor").value = "";
     document.getElementById("receber-descricao").value = "";
+    document.getElementById("receber-telefone").value = "";
     document.getElementById("receber-data").value = new Date().toISOString().slice(0,10);
     document.getElementById("receber-editar-recebido-wrap").classList.add("hidden");
     abrir("overlay-receber");
@@ -893,8 +896,47 @@
   let editandoSaidaId = null;
   let editandoReceberId = null;
 
+  // ---------- PROTEÇÃO DOS BOTÕES DE SALVAR ----------
+  // trava o botão enquanto salva e avisa se der erro (ex: internet fraca)
+  function protegido(btnId, fn) {
+    return async function () {
+      const btn = document.getElementById(btnId);
+      if (btn.disabled) return;
+      const textoOriginal = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = "Salvando…";
+      try {
+        await fn();
+      } catch (err) {
+        console.error(err);
+        alert("Não consegui salvar. Confira sua internet e tente de novo. (" + (err.code || err.message || "erro") + ")");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = btn.textContent === "Salvando…" ? textoOriginal : btn.textContent;
+      }
+    };
+  }
+
+  // ---------- LEMBRETE GENTIL POR WHATSAPP ----------
+  function diasAteData(dataStr) {
+    if (!dataStr) return null;
+    const hoje = new Date(); hoje.setHours(0,0,0,0);
+    const alvo = new Date(dataStr + "T00:00:00");
+    return Math.round((alvo - hoje) / 86400000);
+  }
+  function linkLembreteWhats(d) {
+    let tel = (d.telefone || "").replace(/\D/g, "");
+    if (!tel) return null;
+    if (tel.length <= 11) tel = "55" + tel;
+    const restante = (d.valorTotal || 0) - (d.valorRecebido || 0);
+    const quando = d.data ? `fica pra ${formatarData(d.data)}` : "está em aberto";
+    const nome = (d.nome || "").split(" ")[0];
+    const msg = `Oi, ${nome}! Tudo bem? 😊 Passando só pra lembrar com carinho que o combinado de ${formatarMoeda(restante)} ${quando}. Se precisar de mais um prazo, é só me avisar que a gente combina. Obrigada!`;
+    return "https://wa.me/" + tel + "?text=" + encodeURIComponent(msg);
+  }
+
   // ---------- SALVAR ENTRADA ----------
-  document.getElementById("salvar-entrada").addEventListener("click", async () => {
+  document.getElementById("salvar-entrada").addEventListener("click", protegido("salvar-entrada", async () => {
     const valor = parseFloat(document.getElementById("entrada-valor").value);
     const origem = document.getElementById("entrada-origem").value.trim();
     const categoria = document.getElementById("entrada-categoria").value;
@@ -918,10 +960,10 @@
     document.getElementById("titulo-entrada").textContent = "Nova entrada";
     document.getElementById("salvar-entrada").textContent = "Salvar entrada";
     fechar("overlay-entrada");
-  });
+  }));
 
   // ---------- SALVAR SAÍDA ----------
-  document.getElementById("salvar-saida").addEventListener("click", async () => {
+  document.getElementById("salvar-saida").addEventListener("click", protegido("salvar-saida", async () => {
     const descricao = document.getElementById("saida-descricao").value.trim();
     const categoria = document.getElementById("saida-categoria").value;
     const valorTotal = parseFloat(document.getElementById("saida-valor").value);
@@ -950,13 +992,14 @@
     document.getElementById("titulo-saida").textContent = "Nova conta / saída";
     document.getElementById("salvar-saida").textContent = "Salvar conta";
     fechar("overlay-saida");
-  });
+  }));
 
   // ---------- SALVAR A RECEBER ----------
-  document.getElementById("salvar-receber").addEventListener("click", async () => {
+  document.getElementById("salvar-receber").addEventListener("click", protegido("salvar-receber", async () => {
     const nome = document.getElementById("receber-nome").value.trim();
     const valorTotal = parseFloat(document.getElementById("receber-valor").value);
     const descricao = document.getElementById("receber-descricao").value.trim();
+    const telefone = document.getElementById("receber-telefone").value.replace(/\D/g, "");
     const data = document.getElementById("receber-data").value;
 
     if (!nome || !valorTotal || valorTotal <= 0) { alert("Preencha nome e valor."); return; }
@@ -964,12 +1007,12 @@
     if (editandoReceberId) {
       const valorRecebido = parseFloat(document.getElementById("receber-valor-recebido").value) || 0;
       const status = valorRecebido >= valorTotal ? "quitada" : (valorRecebido > 0 ? "parcial" : "pendente");
-      await updateDoc(doc(db, "a_receber", editandoReceberId), { nome, valorTotal, descricao, data, valorRecebido, status });
+      await updateDoc(doc(db, "a_receber", editandoReceberId), { nome, valorTotal, descricao, telefone, data, valorRecebido, status });
       editandoReceberId = null;
     } else {
       await addDoc(receberRef, {
       ownerId: uidAtual,
-        nome, valorTotal, descricao, data,
+        nome, valorTotal, descricao, telefone, data,
         valorRecebido: 0,
         status: "pendente",
         criadoEm: serverTimestamp()
@@ -979,10 +1022,11 @@
     document.getElementById("receber-nome").value = "";
     document.getElementById("receber-valor").value = "";
     document.getElementById("receber-descricao").value = "";
+    document.getElementById("receber-telefone").value = "";
     document.getElementById("titulo-receber").textContent = "Alguém me deve";
     document.getElementById("salvar-receber").textContent = "Salvar";
     fechar("overlay-receber");
-  });
+  }));
 
   // ---------- FILTRO DE MÊS ----------
   let filtroMesAtual = new Date().toISOString().slice(0, 7); // YYYY-MM
@@ -1209,6 +1253,7 @@
             ${d.status !== "quitada" ? `
               <div class="card-progresso valor-sensivel">Recebido: ${formatarMoeda(d.valorRecebido || 0)} · Falta: ${formatarMoeda(restante)}</div>
               <div class="card-acoes">
+                ${(() => { const l = linkLembreteWhats(d); if (!l) return ""; const dias = diasAteData(d.data); const quente = dias !== null && dias <= 3; return `<a class="small ${quente ? "" : "secondary"}" href="${l}" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block;padding:8px 12px;border-radius:8px;border:1px solid var(--border,#262b36);color:inherit;${quente ? "background:#25d366;color:#fff;border-color:#25d366;" : ""}">💬 Lembrar por WhatsApp${quente ? (dias < 0 ? " (venceu)" : dias === 0 ? " (vence hoje)" : " (vence em " + dias + "d)") : ""}</a>`; })()}
                 <button class="small" data-receber="${id}">Registrar recebimento</button>
                 <button class="small secondary" data-historico-receber="${id}">Ver histórico</button>
                 <button class="small secondary" data-editar-receber="${id}">Editar</button>
@@ -1277,6 +1322,7 @@
     document.getElementById("receber-nome").value = item.nome || "";
     document.getElementById("receber-valor").value = item.valorTotal;
     document.getElementById("receber-descricao").value = item.descricao || "";
+    document.getElementById("receber-telefone").value = item.telefone || "";
     document.getElementById("receber-data").value = item.data || "";
     document.getElementById("receber-valor-recebido").value = item.valorRecebido || 0;
     document.getElementById("receber-editar-recebido-wrap").classList.remove("hidden");
