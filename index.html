@@ -251,8 +251,15 @@
   .toggle-senha:hover { opacity: 1; }
   .card-acoes {
     display: flex;
-    gap: 8px;
+    flex-wrap: wrap;
+    gap: 6px;
     margin-top: 10px;
+  }
+  .card-acoes button.small, .card-acoes a.small {
+    padding: 6px 10px;
+    font-size: 12px;
+    line-height: 1.2;
+    white-space: nowrap;
   }
 
   .fab {
@@ -1253,7 +1260,7 @@
             ${d.status !== "quitada" ? `
               <div class="card-progresso valor-sensivel">Recebido: ${formatarMoeda(d.valorRecebido || 0)} · Falta: ${formatarMoeda(restante)}</div>
               <div class="card-acoes">
-                ${(() => { const l = linkLembreteWhats(d); if (!l) return ""; const dias = diasAteData(d.data); const quente = dias !== null && dias <= 3; return `<a class="small ${quente ? "" : "secondary"}" href="${l}" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block;padding:8px 12px;border-radius:8px;border:1px solid var(--border,#262b36);color:inherit;${quente ? "background:#25d366;color:#fff;border-color:#25d366;" : ""}">💬 Lembrar por WhatsApp${quente ? (dias < 0 ? " (venceu)" : dias === 0 ? " (vence hoje)" : " (vence em " + dias + "d)") : ""}</a>`; })()}
+                ${(() => { const l = linkLembreteWhats(d); if (!l) return ""; const dias = diasAteData(d.data); const quente = dias !== null && dias <= 3; return `<a class="small ${quente ? "" : "secondary"}" href="${l}" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block;padding:6px 10px;font-size:12px;white-space:nowrap;border-radius:8px;border:1px solid var(--border,#262b36);color:inherit;${quente ? "background:#25d366;color:#fff;border-color:#25d366;" : ""}">💬 Lembrar${quente ? (dias < 0 ? " (venceu)" : dias === 0 ? " (vence hoje)" : " (vence em " + dias + "d)") : ""}</a>`; })()}
                 <button class="small" data-receber="${id}">Registrar recebimento</button>
                 <button class="small secondary" data-historico-receber="${id}">Ver histórico</button>
                 <button class="small secondary" data-editar-receber="${id}">Editar</button>
